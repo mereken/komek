@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16
+    container_name: komek-db
+    environment:
+      POSTGRES_DB: komek
+      POSTGRES_USER: komek
+      POSTGRES_PASSWORD: komek
+    ports:
+      - "15432:5432"   # host port 15432 (not 5432) so it never clashes with a local PostgreSQL
+    volumes:
+      - komek_pg:/var/lib/postgresql/data
+volumes:
+  komek_pg:
