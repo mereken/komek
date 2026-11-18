@@ -29,6 +29,10 @@ public class User {
     @Column(nullable = false, length = 10)
     private Mode mode = Mode.REQUESTER;
 
+    // Admin flag. Set by hand in the database: UPDATE users SET is_admin = true WHERE id = ...
+    @Column(name = "is_admin", columnDefinition = "boolean default false")
+    private boolean admin;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -46,5 +50,6 @@ public class User {
     public void setPhone(String v) { this.phone = v; }
     public Mode getMode() { return mode; }
     public void setMode(Mode v) { this.mode = v; }
+    public boolean isAdmin() { return admin; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

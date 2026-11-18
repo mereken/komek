@@ -23,14 +23,18 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public UserDto me(Authentication auth) { return tasks.userDto(current(auth)); }
+    public UserDto me(Authentication auth) {
+        User u = current(auth);
+        return tasks.userDto(u).withAdmin(u.isAdmin());
+    }
 
     /** Used by the "What do you want to do?" screen and by the profile switch. */
     @PatchMapping("/me/mode")
     public UserDto setMode(Authentication auth, @Valid @RequestBody ModeRequest req) {
         User u = current(auth);
         u.setMode(req.mode());
-        return tasks.userDto(users.save(u));
+        User saved = users.save(u);
+        return tasks.userDto(saved).withAdmin(saved.isAdmin());
     }
 
     private User current(Authentication auth) {

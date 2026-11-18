@@ -13,6 +13,7 @@ export interface User {
   createdAt: string;
   rating: number | null;
   ratingCount: number;
+  admin: boolean;
 }
 
 export interface AuthResponse {
@@ -83,6 +84,58 @@ export interface NewTask {
   reward: number | null;
 }
 
+// ---- admin panel
+export interface DayPoint {
+  date: string; // "2026-11-18"
+  users: number;
+  tasks: number;
+}
+
+export interface AdminStats {
+  users: number;
+  requesters: number;
+  runners: number;
+  admins: number;
+  newUsers7d: number;
+  tasks: number;
+  tasksByStatus: Record<TaskStatus, number>;
+  tasks7d: number;
+  responses: number;
+  doneReward: number;
+  avgRating: number | null;
+  ratingCount: number;
+  days: DayPoint[];
+}
+
+export interface AdminUser {
+  id: number;
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  mode: Mode;
+  admin: boolean;
+  createdAt: string;
+  tasksAsRequester: number;
+  tasksAsRunner: number;
+  responses: number;
+}
+
+export interface AdminTask {
+  id: number;
+  title: string;
+  category: Category;
+  status: TaskStatus;
+  reward: number;
+  location: string;
+  deadline: string;
+  createdAt: string;
+  requesterId: number;
+  requesterName: string;
+  runnerId: number | null;
+  runnerName: string | null;
+  responses: number;
+}
+
 export const TOKEN_KEY = 'komek_token';
 export const saveToken = (t: string) => localStorage.setItem(TOKEN_KEY, t);
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
@@ -145,4 +198,12 @@ export const api = {
 
   // both
   task: (id: number) => request<Task>(`/tasks/${id}`),
+
+  // admin panel (the backend answers 403 to everyone who is not an admin)
+  adminStats: () => request<AdminStats>('/admin/stats'),
+  adminUsers: (q: string) => request<AdminUser[]>(`/admin/users?q=${encodeURIComponent(q.trim())}`),
+  adminDeleteUser: (id: number) => request<{ ok: boolean }>(`/admin/users/${id}`, 'DELETE'),
+  adminTasks: (status?: TaskStatus) => request<AdminTask[]>(`/admin/tasks${status ? `?status=${status}` : ''}`),
+  adminCancelTask: (id: number) => request<{ ok: boolean }>(`/admin/tasks/${id}/cancel`, 'POST'),
+  adminDeleteTask: (id: number) => request<{ ok: boolean }>(`/admin/tasks/${id}`, 'DELETE'),
 };

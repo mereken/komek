@@ -13,6 +13,7 @@ import Tasks from './pages/Tasks';
 import TaskPage from './pages/TaskPage';
 import Responders from './pages/Responders';
 import Profile from './pages/Profile';
+import Admin from './pages/Admin';
 
 const HOME = '/home';
 
@@ -24,6 +25,12 @@ function Guest({ children }: { children: ReactNode }) {
 function RequireAuth() {
   const { user } = useAuth();
   return user ? <Outlet /> : <Navigate to="/welcome" replace />;
+}
+
+/** The admin panel is for users with the admin flag only (the backend checks it too). */
+function RequireAdmin({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  return user?.admin ? <>{children}</> : <Navigate to={HOME} replace />;
 }
 
 /** Screens that exist only for one mode. After switching mode in the profile we send the user to the matching screen. */
@@ -52,6 +59,7 @@ export default function App() {
           <Route path="/task/:id/responders" element={<Responders />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
+        <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
       </Route>
 
       <Route path="*" element={<Navigate to={user ? HOME : '/welcome'} replace />} />

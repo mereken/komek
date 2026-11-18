@@ -7,6 +7,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -31,11 +33,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             try {
                 Long id = jwt.extractUserId(header.substring(7));
-                if (users.existsById(id)) {
+                // The admin flag is read from the database on every request, so removing it takes effect at once.
+                users.findById(id).ifPresent(u -> {
+                    List<GrantedAuthority> authorities = u.isAdmin()
+                            ? List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+                            : List.of();
                     // principal name = user id as text
                     SecurityContextHolder.getContext().setAuthentication(
-                            new UsernamePasswordAuthenticationToken(String.valueOf(id), null, List.of()));
-                }
+                            new UsernamePasswordAuthenticationToken(String.valueOf(id), null, authorities));
+                });
             } catch (JwtException | IllegalArgumentException ignored) {
                 // bad token -> request stays unauthenticated -> 401 on protected routes
             }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, Mode } from '../api';
 import { useAuth } from '../AuthContext';
 import { formatPhone } from '../format';
@@ -51,6 +52,7 @@ export default function Profile() {
       {error && <div className="err">{error}</div>}
 
       <div className="actions">
+        {user.admin && <Link className="btn outline" to="/admin">Админ-панель</Link>}
         <button type="button" className="btn outline" onClick={signOut}>Выйти</button>
       </div>
     </>
