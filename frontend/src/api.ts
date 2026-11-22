@@ -11,9 +11,13 @@ export interface User {
   phone: string | null;
   mode: Mode;
   createdAt: string;
-  rating: number | null;
+  rating: number | null; // as a runner (rated by requesters)
   ratingCount: number;
+  requesterRating: number | null; // as a requester (rated by runners)
+  requesterRatingCount: number;
   admin: boolean;
+  avatarUrl: string | null;
+  balance: number; // wallet points (1 point = 1 tenge)
 }
 
 export interface AuthResponse {
@@ -42,6 +46,21 @@ export interface Person {
   ratingCount: number;
   completed: number;
   contact: string | null;
+  avatarUrl: string | null;
+}
+
+export type PaymentStatus = 'PAID' | 'RELEASED' | 'REFUNDED' | 'FAILED';
+export type PaymentMethod = 'CARD' | 'BALANCE';
+
+/** Payment of an order. PAID = money is reserved, RELEASED = paid out to the runner, REFUNDED = returned. */
+export interface PaymentInfo {
+  status: PaymentStatus;
+  amount: number;
+  commission: number;
+  payout: number;
+  method: PaymentMethod;
+  cardLast4: string | null;
+  updatedAt: string;
 }
 
 export interface Task {
@@ -49,7 +68,8 @@ export interface Task {
   title: string;
   description: string;
   category: Category;
-  location: string;
+  fromLocation: string | null; // "where from" (pickup / shop), only for two-address orders
+  location: string; // the main address: where to bring / leave, or the only address
   deadline: string; // "2026-10-07T18:00:00" (Almaty time, no zone)
   reward: number;
   status: TaskStatus;
@@ -60,6 +80,12 @@ export interface Task {
   responseCount: number;
   myPrice: number | null; // my own response price, if I responded
   rating: number | null; // requester's rating of the runner
+  requesterRating: number | null; // runner's rating of the requester
+  awaitingConfirmation: boolean; // the runner reported "done", the requester has not confirmed yet
+  commissionPercent: number;
+  commission: number; // platform's share of the current price
+  payout: number; // what the runner gets
+  payment: PaymentInfo | null;
 }
 
 export interface Offer {
@@ -78,10 +104,64 @@ export interface WorkItem {
 export interface NewTask {
   category: Category | null;
   title: string;
+  fromLocation: string | null;
   location: string;
   deadline: string | null; // "2026-10-07T18:00"
   description: string;
   reward: number | null;
+}
+
+// ---- payments and wallet
+export interface PayBody {
+  method: PaymentMethod;
+  useSavedCard?: boolean;
+  cardNumber?: string;
+  expiry?: string;
+  cvc?: string;
+  saveCard?: boolean;
+  simulateFail?: boolean; // demo "bank declines" switch (works only in test mode)
+}
+
+/** ok = false: the (simulated) bank declined, nothing was charged. */
+export interface PayResult {
+  ok: boolean;
+  message: string;
+  task: Task;
+}
+
+export interface Card {
+  brand: string;
+  last4: string;
+  holder: string | null;
+  expiry: string;
+}
+
+export type TxType = 'TOPUP' | 'WITHDRAWAL' | 'PAYMENT' | 'REFUND' | 'PAYOUT';
+
+export interface Tx {
+  id: number;
+  type: TxType;
+  amount: number; // signed
+  balanceAfter: number;
+  taskId: number | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface Wallet {
+  balance: number;
+  commissionPercent: number;
+  testMode: boolean;
+  card: Card | null;
+  transactions: Tx[];
+}
+
+export interface Place {
+  title: string;
+  subtitle: string;
+  text: string; // goes into the input when picked
+  lat: number | null;
+  lon: number | null;
 }
 
 // ---- admin panel
@@ -102,6 +182,8 @@ export interface AdminStats {
   tasks7d: number;
   responses: number;
   doneReward: number;
+  commission: number; // platform income: commission of paid-out orders
+  held: number; // money reserved for orders in progress
   avgRating: number | null;
   ratingCount: number;
   days: DayPoint[];
@@ -134,6 +216,7 @@ export interface AdminTask {
   runnerId: number | null;
   runnerName: string | null;
   responses: number;
+  paymentStatus: PaymentStatus | null;
 }
 
 export const TOKEN_KEY = 'komek_token';
@@ -174,6 +257,23 @@ export const api = {
     request<AuthResponse>('/auth/login', 'POST', { login, password }),
   me: () => request<User>('/users/me'),
   setMode: (mode: Mode) => request<User>('/users/me/mode', 'PATCH', { mode }),
+  updateProfile: (fullName: string) => request<User>('/users/me', 'PATCH', { fullName }),
+  setAvatar: (image: string) => request<User>('/users/me/avatar', 'PUT', { image }),
+  removeAvatar: () => request<User>('/users/me/avatar', 'DELETE'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ ok: boolean }>('/users/me/password', 'POST', { currentPassword, newPassword }),
+
+  // wallet and payments (demo bank, no real money)
+  wallet: () => request<Wallet>('/wallet'),
+  saveCard: (b: { cardNumber: string; expiry: string; holder: string }) => request<Wallet>('/wallet/card', 'PUT', b),
+  removeCard: () => request<Wallet>('/wallet/card', 'DELETE'),
+  topUp: (amount: number, simulateFail: boolean) => request<Wallet>('/wallet/topup', 'POST', { amount, simulateFail }),
+  withdrawMoney: (amount: number) => request<Wallet>('/wallet/withdraw', 'POST', { amount }),
+  pay: (id: number, b: PayBody) => request<PayResult>(`/tasks/${id}/pay`, 'POST', b),
+  confirm: (id: number) => request<Task>(`/tasks/${id}/confirm`, 'POST'),
+
+  // address suggestions
+  places: (q: string) => request<Place[]>(`/places/suggest?q=${encodeURIComponent(q)}`),
 
   // requester
   createTask: (b: NewTask) => request<Task>('/tasks', 'POST', b),
@@ -182,6 +282,7 @@ export const api = {
   selectOffer: (id: number, offerId: number) => request<Task>(`/tasks/${id}/responses/${offerId}/select`, 'POST'),
   cancel: (id: number) => request<Task>(`/tasks/${id}/cancel`, 'POST'),
   rate: (id: number, rating: number) => request<Task>(`/tasks/${id}/rating`, 'POST', { rating }),
+  rateRequester: (id: number, rating: number) => request<Task>(`/tasks/${id}/rating/requester`, 'POST', { rating }),
 
   // runner
   feed: (q: string, category?: Category) => {

@@ -1,0 +1,135 @@
+/* Additions: password eye, address suggestions, avatars, payments, wallet, profile. */
+
+/* ---- password field with the eye button */
+.pwfield { position: relative; }
+.pwfield input { padding-right: 52px; }
+.pw-eye {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  width: 40px; height: 40px; border: 0; border-radius: 10px; background: none;
+  color: var(--muted); display: grid; place-items: center; cursor: pointer;
+}
+.pw-eye:hover { color: var(--brand); background: var(--soft); }
+.pw-rules { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--muted); }
+.pw-rules li.ok { color: var(--brand); }
+.pw-rules span { display: inline-block; width: 16px; }
+
+/* ---- address suggestions */
+.addr { position: relative; }
+.addr-list {
+  position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 6px); margin: 0; padding: 6px; list-style: none;
+  background: #fff; border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 30px rgba(16, 38, 31, 0.15);
+  max-height: 300px; overflow-y: auto;
+}
+.addr-list li button {
+  display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px; border: 0; border-radius: 10px;
+  background: none; text-align: left; font: inherit; color: var(--ink); cursor: pointer;
+}
+.addr-list li button:hover, .addr-list li button.on { background: var(--soft); }
+.addr-pin { flex: none; margin-top: 2px; color: var(--brand); }
+.addr-list b { display: block; font-size: 15px; font-weight: 600; }
+.addr-list small { display: block; margin-top: 1px; color: var(--muted); font-size: 12px; line-height: 1.35; }
+.addr-note { padding: 10px; color: var(--muted); font-size: 13px; }
+
+/* ---- avatars (photo or initial) */
+.avatar { overflow: hidden; flex: none; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar.lg { width: 64px; height: 64px; font-size: 26px; }
+.avatar.xl { width: 96px; height: 96px; font-size: 38px; }
+
+/* ---- order cards / notes */
+.tcard-place { color: var(--ink); font-size: 13px; margin: 2px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note.ok { background: #d9efe6; }
+.note.warn { background: #fbe3cf; color: #b4570b; }
+.ok-text { color: var(--brand); font-size: 13px; margin: 4px 0 8px; }
+.btn.small { height: 42px; font-size: 14px; padding: 0 18px; width: auto; }
+
+/* ---- payment */
+.pay-card { background: var(--tint); border-color: transparent; }
+.pay-card p { margin: 4px 0 12px; }
+.pay-summary .bigprice { margin-bottom: 10px; }
+.pay-lines { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+.pay-lines div { display: flex; justify-content: space-between; font-size: 14px; }
+.pay-lines span { color: var(--muted); }
+.paycards { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.paycards button {
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line);
+  border-radius: 12px; background: #fff; font: inherit; text-align: left; cursor: pointer; color: var(--ink);
+}
+.paycards button span { color: var(--muted); font-size: 13px; }
+.paycards button.on { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); background: var(--tint); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.check-row { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--muted); margin-bottom: 16px; line-height: 1.4; }
+.check-row input { width: 18px; height: 18px; margin: 1px 0 0; padding: 0; flex: none; accent-color: var(--brand); }
+.testbox { border: 1px dashed var(--line); border-radius: 14px; padding: 12px 14px; margin: 4px 0 12px; background: #fafcfb; }
+.testbox b { font-size: 13px; }
+.testbox p { margin: 4px 0 10px; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.testbox .seg { margin: 8px 0 0; }
+
+/* ---- wallet */
+.balance-card {
+  display: flex; flex-direction: column; gap: 4px; padding: 20px; border-radius: 20px; margin-bottom: 14px;
+  background: linear-gradient(135deg, #12705d, #0d5a4a); color: #fff;
+}
+.balance-card .k { font-size: 13px; opacity: 0.8; }
+.balance-card b { font-size: 32px; line-height: 1.15; }
+.balance-actions { display: flex; gap: 10px; margin-top: 14px; }
+.balance-actions button {
+  flex: 1; height: 44px; border: 0; border-radius: 12px; background: rgba(255, 255, 255, 0.18); color: #fff;
+  font: inherit; font-weight: 600; cursor: pointer;
+}
+.balance-actions button:hover { background: rgba(255, 255, 255, 0.3); }
+.quick { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 12px; }
+.quick button { padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font: inherit; font-size: 13px; cursor: pointer; }
+.quick button:hover { background: var(--soft); }
+.card .moneyfield { margin-top: 8px; }
+.card > .btn, .card > .testbox + .btn { margin-top: 8px; }
+
+.bankcard {
+  padding: 18px; border-radius: 18px; color: #fff; margin-bottom: 12px;
+  background: linear-gradient(135deg, #2d3b57, #1b2438);
+}
+.bankcard-brand { font-size: 13px; opacity: 0.8; }
+.bankcard-num { font-size: 20px; letter-spacing: 2px; margin: 14px 0; }
+.bankcard-row { display: flex; justify-content: space-between; font-size: 13px; opacity: 0.9; }
+.bankcard-actions { display: flex; gap: 14px; margin-top: 14px; }
+.bankcard-actions button { background: none; border: 0; padding: 0; color: #fff; font: inherit; font-size: 13px; font-weight: 600; text-decoration: underline; cursor: pointer; opacity: 0.9; }
+
+.howto { margin: 4px 0 8px; padding-left: 20px; font-size: 14px; line-height: 1.55; color: var(--muted); }
+
+.tx { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.tx-ico { flex: none; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; }
+.tx-ico.pos { background: #d9efe6; color: var(--brand); }
+.tx-ico.neg { background: var(--soft); color: var(--muted); }
+.tx-main { flex: 1; min-width: 0; }
+.tx-main b { font-size: 14px; }
+.tx-main .m { font-size: 12px; line-height: 1.35; }
+.tx-main a { color: var(--brand); font-weight: 600; }
+.tx-sum { font-weight: 700; white-space: nowrap; }
+.tx-sum.pos { color: var(--brand); }
+
+/* ---- profile */
+.pcard { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 20px 16px; border: 1px solid var(--line); border-radius: 20px; margin-bottom: 12px; }
+.pname { font-size: 20px; margin-top: 8px; }
+.rchips { display: flex; gap: 10px; width: 100%; margin-top: 14px; }
+.rchip { flex: 1; background: var(--soft); border-radius: 14px; padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; }
+.rchip .k { font-size: 12px; color: var(--muted); }
+.rchip b { font-size: 16px; }
+.rchip b small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.rchip b.none { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+.wallet-link {
+  display: flex; align-items: center; justify-content: space-between; padding: 16px; border-radius: 16px; margin-bottom: 4px;
+  background: var(--tint); color: var(--ink); text-decoration: none;
+}
+.wallet-link .k { display: block; font-size: 12px; color: var(--muted); }
+.wallet-link b { font-size: 18px; color: var(--brand); }
+.wallet-link .chev, .menu .chev { color: var(--muted); font-size: 22px; }
+
+.menu { display: flex; flex-direction: column; margin-top: 16px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.menu a { display: flex; align-items: center; justify-content: space-between; padding: 15px 16px; color: var(--ink); text-decoration: none; font-size: 15px; }
+.menu a + a { border-top: 1px solid var(--line); }
+.menu a:hover { background: var(--soft); }
+
+.photo-edit { display: flex; align-items: center; gap: 18px; margin: 8px 0 16px; }
+.photo-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.photo-actions .link.danger { align-self: flex-start; padding: 0; }

@@ -4,8 +4,12 @@ import { api, AuthResponse, Channel, Mode, StartResponse } from '../api';
 import { useAuth } from '../AuthContext';
 import { formatPhone, formatTimer } from '../format';
 import OtpInput from '../components/OtpInput';
+import PasswordInput from '../components/PasswordInput';
+import PasswordRules from '../components/PasswordRules';
+import PhoneInput from '../components/PhoneInput';
 import Progress from '../components/Progress';
 import Segmented from '../components/Segmented';
+import { isValidEmail, isValidKzPhone, passwordOk } from '../validation';
 
 export default function Register() {
   const { signIn } = useAuth();
@@ -13,8 +17,11 @@ export default function Register() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [channel, setChannel] = useState<Channel>('PHONE');
   const [fullName, setFullName] = useState('');
-  const [contact, setContact] = useState('');
+  const [contact, setContact] = useState(''); // e-mail
+  const [phone, setPhone] = useState(''); // 10 digits after +7
   const [password, setPassword] = useState('');
+  const [password2, setPassword2] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{ name?: string; contact?: string; password?: string; password2?: string }>({});
 
   const [info, setInfo] = useState<StartResponse | null>(null);
   const [code, setCode] = useState('');
@@ -49,14 +56,31 @@ export default function Register() {
 
   const sendCode = () =>
     run(async () => {
-      const r = await api.startRegistration({ fullName, channel, contact, password });
+      const r = await api.startRegistration({
+        fullName: fullName.trim(),
+        channel,
+        contact: channel === 'PHONE' ? '+7' + phone : contact.trim(),
+        password,
+      });
       setInfo(r);
       setCode('');
       setLeft(r.resendInSeconds);
       setStep(2);
     });
 
-  const onDetails = (e: FormEvent) => { e.preventDefault(); sendCode(); };
+  const onDetails = (e: FormEvent) => {
+    e.preventDefault();
+    const errs: typeof fieldErrors = {};
+    if (fullName.trim().length < 2) errs.name = 'Введите имя (от 2 букв)';
+    if (channel === 'PHONE' ? !isValidKzPhone(phone) : !isValidEmail(contact)) {
+      errs.contact = channel === 'PHONE' ? 'Введите номер полностью: +7 (7XX) XXX-XX-XX' : 'Введите корректный e-mail, например adam@gmail.com';
+    }
+    if (!passwordOk(password)) errs.password = 'Пароль должен быть не короче 8 символов, с буквой и цифрой';
+    if (password2 !== password) errs.password2 = 'Пароли не совпадают';
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) { setError(''); return; }
+    sendCode();
+  };
 
   const onConfirm = () =>
     run(async () => {
@@ -86,31 +110,41 @@ export default function Register() {
           <Segmented<Channel>
             options={[{ value: 'PHONE', label: 'Телефон' }, { value: 'EMAIL', label: 'E-mail' }]}
             value={channel}
-            onChange={(c) => { setChannel(c); setContact(''); setError(''); }}
+            onChange={(c) => { setChannel(c); setContact(''); setPhone(''); setFieldErrors({}); setError(''); }}
           />
 
           <div className="field">
             <label htmlFor="name">Имя</label>
             <input id="name" autoComplete="given-name" maxLength={100} placeholder="Адам" value={fullName}
-                   onChange={(e) => setFullName(e.target.value)} />
+                   className={fieldErrors.name ? 'invalid' : ''} onChange={(e) => setFullName(e.target.value)} />
+            {fieldErrors.name && <div className="err">{fieldErrors.name}</div>}
           </div>
 
           <div className="field">
             <label htmlFor="contact">{channel === 'PHONE' ? 'Номер телефона' : 'E-mail'}</label>
             {channel === 'PHONE' ? (
-              <input id="contact" type="tel" autoComplete="tel" placeholder="+7 xxx-xxx-xxxx"
-                     value={contact} onChange={(e) => setContact(e.target.value)} />
+              <PhoneInput id="contact" value={phone} invalid={!!fieldErrors.contact} onChange={setPhone} />
             ) : (
               <input id="contact" type="email" autoComplete="email" placeholder="adam@gmail.com"
+                     className={fieldErrors.contact ? 'invalid' : ''}
                      value={contact} onChange={(e) => setContact(e.target.value)} />
             )}
+            {fieldErrors.contact && <div className="err">{fieldErrors.contact}</div>}
           </div>
 
           <div className="field">
             <label htmlFor="password">Пароль</label>
-            <input id="password" type="password" autoComplete="new-password" maxLength={72}
-                   placeholder="Минимум 8 символов" value={password}
-                   onChange={(e) => setPassword(e.target.value)} />
+            <PasswordInput id="password" autoComplete="new-password" maxLength={72} placeholder="Минимум 8 символов"
+                           invalid={!!fieldErrors.password} value={password} onChange={setPassword} />
+            <PasswordRules value={password} />
+            {fieldErrors.password && <div className="err">{fieldErrors.password}</div>}
+          </div>
+
+          <div className="field">
+            <label htmlFor="password2">Повторите пароль</label>
+            <PasswordInput id="password2" autoComplete="new-password" maxLength={72} placeholder="Ещё раз пароль"
+                           invalid={!!fieldErrors.password2} value={password2} onChange={setPassword2} />
+            {fieldErrors.password2 && <div className="err">{fieldErrors.password2}</div>}
           </div>
 
           {error && <div className="err">{error}</div>}

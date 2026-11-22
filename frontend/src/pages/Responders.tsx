@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, Offer, Task } from '../api';
 import { money } from '../format';
 import { useLoad } from '../hooks';
+import Avatar from '../components/Avatar';
 import BackButton from '../components/BackButton';
 
 export default function Responders() {
@@ -49,10 +50,10 @@ export default function Responders() {
 
       {offers.map((o) => (
         <div className="offer" key={o.id}>
-          <div className="avatar">{o.runner.name.trim().charAt(0).toUpperCase()}</div>
+          <Avatar name={o.runner.name} url={o.runner.avatarUrl} />
           <div className="grow">
             <b>{o.runner.name}{o.runner.completed > 0 && <span className="check" title="Уже выполнял задания в Komek"> ✓</span>}</b>
-            <div className="m">{o.runner.rating != null ? `★ ${o.runner.rating}` : 'Новичок'}</div>
+            <div className="m">{o.runner.rating != null ? `★ ${o.runner.rating} · оценок: ${o.runner.ratingCount}` : 'Новичок'}</div>
           </div>
           <div className="offer-side">
             <span className="price">{money(o.price)}</span>

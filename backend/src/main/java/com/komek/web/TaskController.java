@@ -45,6 +45,16 @@ public class TaskController {
         return service.rate(uid(a), id, r.rating());
     }
 
+    /** Pay for the order (the money is reserved until the work is confirmed). */
+    @PostMapping("/{id}/pay")
+    public PayResult pay(Authentication a, @PathVariable Long id, @Valid @RequestBody PayRequest r) {
+        return service.pay(uid(a), id, r);
+    }
+
+    /** "Работа выполнена": confirm the result, the runner gets the money. */
+    @PostMapping("/{id}/confirm")
+    public TaskDto confirm(Authentication a, @PathVariable Long id) { return service.confirm(uid(a), id); }
+
     // runner
     @GetMapping("/feed")
     public List<TaskDto> feed(Authentication a, @RequestParam(required = false) String q,
@@ -70,6 +80,11 @@ public class TaskController {
 
     @PostMapping("/{id}/complete")
     public TaskDto complete(Authentication a, @PathVariable Long id) { return service.complete(uid(a), id); }
+
+    @PostMapping("/{id}/rating/requester")
+    public TaskDto rateRequester(Authentication a, @PathVariable Long id, @Valid @RequestBody RateRequest r) {
+        return service.rateRequester(uid(a), id, r.rating());
+    }
 
     // both
     @GetMapping("/{id}")

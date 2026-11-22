@@ -1,42 +1,75 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, Category } from '../api';
-import { CATEGORIES } from '../format';
+import { CATEGORIES, PLACE_LABELS } from '../format';
+import AddressInput from '../components/AddressInput';
 import BackButton from '../components/BackButton';
 import Dropdown from '../components/Dropdown';
 import MoneyInput from '../components/MoneyInput';
 
-const pad = (n: number) => String(n).padStart(2, '0');
+/** The deadline must be at least this many minutes from now (the backend checks the same). */
+const MIN_LEAD_MINUTES = 30;
 
-/** Current local time in the format datetime-local expects, so past times can't be picked. */
-function nowLocal(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+/** "Now + minutes" in Almaty time, in the format a datetime-local input uses: 2026-11-22T14:35 */
+function almatyLocal(plusMinutes = 0): string {
+  const d = new Date(Date.now() + plusMinutes * 60000);
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Almaty', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '00';
+  const hour = get('hour') === '24' ? '00' : get('hour');
+  return `${get('year')}-${get('month')}-${get('day')}T${hour}:${get('minute')}`;
 }
+
+type Errors = Partial<Record<'category' | 'from' | 'where' | 'when' | 'price', string>>;
 
 export default function NewOrder() {
   const nav = useNavigate();
   const [category, setCategory] = useState<Category | ''>('');
   const [title, setTitle] = useState('');
+  const [from, setFrom] = useState('');
   const [location, setLocation] = useState('');
   const [deadline, setDeadline] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
+  const [errors, setErrors] = useState<Errors>({});
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
+  const labels = category ? PLACE_LABELS[category] : null;
+  const earliest = almatyLocal(MIN_LEAD_MINUTES);
+
+  function validate(): Errors {
+    const e: Errors = {};
+    if (!category) e.category = 'Выберите, что нужно сделать';
+    if (labels?.from && !from.trim()) e.from = 'Укажите адрес';
+    if (!location.trim()) e.where = 'Укажите адрес';
+    if (!deadline) e.when = 'Укажите дату и время';
+    else if (deadline < almatyLocal(MIN_LEAD_MINUTES)) {
+      e.when = `Выберите время не раньше чем через ${MIN_LEAD_MINUTES} минут`;
+    }
+    if (!price || Number(price) < 100) e.price = 'Минимальная цена — 100 ₸';
+    return e;
+  }
+
+  async function onSubmit(ev: FormEvent) {
+    ev.preventDefault();
     setError('');
+    const e = validate();
+    setErrors(e);
+    if (Object.keys(e).length > 0) return;
+
     setBusy(true);
     try {
       await api.createTask({
         category: category || null,
         title,
-        location,
-        deadline: deadline || null,
+        fromLocation: labels?.from ? from.trim() : null,
+        location: location.trim(),
+        deadline,
         description,
-        reward: price ? Number(price) : null,
+        reward: Number(price),
       });
       nav('/orders', { replace: true });
     } catch (err) {
@@ -53,7 +86,8 @@ export default function NewOrder() {
 
       <div className="field">
         <label htmlFor="cat">Что нужно сделать</label>
-        <Dropdown id="cat" value={category} options={CATEGORIES} placeholder="Поручение" onChange={setCategory} />
+        <Dropdown id="cat" value={category} options={CATEGORIES} placeholder="Выберите" onChange={(c) => { setCategory(c); setErrors((x) => ({ ...x, category: undefined })); }} />
+        {errors.category && <div className="err">{errors.category}</div>}
       </div>
 
       <div className="field">
@@ -62,14 +96,28 @@ export default function NewOrder() {
                onChange={(e) => setTitle(e.target.value)} />
       </div>
 
+      {labels?.from && (
+        <div className="field">
+          <label htmlFor="from">{labels.from.label}</label>
+          <AddressInput id="from" value={from} onChange={setFrom} placeholder={labels.from.placeholder} invalid={!!errors.from} />
+          {errors.from && <div className="err">{errors.from}</div>}
+        </div>
+      )}
+
       <div className="field">
-        <label htmlFor="where">Где</label>
-        <input id="where" maxLength={200} placeholder="Адрес" value={location} onChange={(e) => setLocation(e.target.value)} />
+        <label htmlFor="where">{labels ? labels.to.label : 'Адрес'}</label>
+        <AddressInput id="where" value={location} onChange={setLocation}
+                      placeholder={labels ? labels.to.placeholder : 'Начните вводить адрес или название места'}
+                      invalid={!!errors.where} />
+        {errors.where && <div className="err">{errors.where}</div>}
       </div>
 
       <div className="field">
         <label htmlFor="when">Когда (выполнить до)</label>
-        <input id="when" type="datetime-local" min={nowLocal()} value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+        <input id="when" type="datetime-local" min={earliest} value={deadline}
+               className={errors.when ? 'invalid' : ''} onChange={(e) => setDeadline(e.target.value)} />
+        <span className="hint">Не раньше чем через {MIN_LEAD_MINUTES} минут от текущего времени.</span>
+        {errors.when && <div className="err">{errors.when}</div>}
       </div>
 
       <div className="field">
@@ -81,6 +129,8 @@ export default function NewOrder() {
       <div className="field">
         <label htmlFor="price">Цена</label>
         <MoneyInput id="price" value={price} onChange={setPrice} />
+        {errors.price && <div className="err">{errors.price}</div>}
+        <span className="hint">Деньги спишутся только после того, как вы выберете исполнителя и оплатите заказ. Исполнитель получит их после вашего подтверждения.</span>
       </div>
 
       {error && <div className="err">{error}</div>}

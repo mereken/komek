@@ -2,6 +2,7 @@ package com.komek.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -25,6 +26,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(a -> a
                 // /error is open so that real server errors are not reported as 401
                 .requestMatchers("/api/auth/**", "/api/health", "/error").permitAll()
+                // profile photos are shown in <img> tags, which cannot send the login token
+                .requestMatchers(HttpMethod.GET, "/api/avatars/*").permitAll()
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated())
             .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))

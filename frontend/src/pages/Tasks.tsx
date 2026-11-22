@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, Scope, WorkItem } from '../api';
-import { workBadge } from '../format';
+import { routeText, workBadge } from '../format';
 import { useLoad } from '../hooks';
 import Segmented from '../components/Segmented';
 import TaskCard from '../components/TaskCard';
@@ -12,6 +12,7 @@ function Card({ item }: { item: WorkItem }) {
     <TaskCard
       to={`/task/${t.id}`}
       title={t.title}
+      place={routeText(t)}
       meta={`Заказчик: ${t.requester.name}`}
       price={item.response ? item.myPrice ?? t.reward : t.reward}
       badge={workBadge(item)}

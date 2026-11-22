@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, Scope } from '../api';
-import { taskBadge, whenText } from '../format';
+import { routeText, taskBadge, whenText } from '../format';
 import { useLoad } from '../hooks';
 import Segmented from '../components/Segmented';
 import TaskCard from '../components/TaskCard';
@@ -33,6 +33,7 @@ export default function Orders() {
           key={t.id}
           to={`/task/${t.id}`}
           title={t.title}
+          place={routeText(t)}
           meta={t.runner ? `Исполнитель: ${t.runner.name}` : whenText(t.deadline).toLowerCase()}
           price={t.reward}
           badge={taskBadge(t)}

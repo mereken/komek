@@ -8,7 +8,7 @@ export default function AppLayout() {
   const runner = user?.mode === 'RUNNER';
 
   const home = pathname.startsWith('/home') || pathname === '/new';
-  const profile = pathname.startsWith('/profile');
+  const profile = pathname.startsWith('/profile') || pathname.startsWith('/wallet');
   const list = !home && !profile;
 
   return (

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, Category } from '../api';
 import { useAuth } from '../AuthContext';
-import { CATEGORIES, firstName, whenText } from '../format';
+import { CATEGORIES, firstName, routeText, whenText } from '../format';
 import { useLoad } from '../hooks';
 import Hero from '../components/Hero';
 import Logo from '../components/Logo';
@@ -27,6 +27,19 @@ function RequesterHome({ name }: { name: string }) {
   );
 }
 
+/** Examples shown (pale) in the empty search field, one after another, so people see what can be searched. */
+const SEARCH_EXAMPLES = ['Мега', 'забрать посылку', 'улица Абая', 'выгулять собаку', 'купить лекарства', 'аптека'];
+
+function useRotatingExample(active: boolean): string {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const t = setInterval(() => setI((n) => (n + 1) % SEARCH_EXAMPLES.length), 2500);
+    return () => clearInterval(t);
+  }, [active]);
+  return SEARCH_EXAMPLES[i];
+}
+
 /** Runner's feed: open tasks of other people, with search and category filter. */
 function RunnerHome() {
   const [q, setQ] = useState('');
@@ -39,11 +52,13 @@ function RunnerHome() {
   }, [q]);
 
   const { data, loading, error } = useLoad(() => api.feed(debounced, cat || undefined), [debounced, cat]);
+  const example = useRotatingExample(q === '');
 
   return (
     <>
       <Logo />
-      <input className="search" type="search" placeholder="Поиск" value={q} onChange={(e) => setQ(e.target.value)} />
+      <input className="search" type="search" placeholder={`Поиск по названию и адресу, например: «${example}»`}
+             value={q} onChange={(e) => setQ(e.target.value)} />
       <Hero title={<>Выполните дело.<br />Заработайте в свободное время.</>} />
 
       <div className="chips">
@@ -64,7 +79,7 @@ function RunnerHome() {
         </div>
       )}
       {data?.map((t) => (
-        <TaskCard key={t.id} to={`/task/${t.id}`} title={t.title} meta={whenText(t.deadline).toLowerCase()} price={t.reward} />
+        <TaskCard key={t.id} to={`/task/${t.id}`} title={t.title} place={routeText(t)} meta={whenText(t.deadline).toLowerCase()} price={t.reward} />
       ))}
     </>
   );

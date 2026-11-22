@@ -17,8 +17,8 @@ public final class AdminDtos {
 
     public record Stats(long users, long requesters, long runners, long admins, long newUsers7d,
                         long tasks, Map<String, Long> tasksByStatus, long tasks7d,
-                        long responses, long doneReward, Double avgRating, long ratingCount,
-                        List<DayPoint> days) {}
+                        long responses, long doneReward, long commission, long held,
+                        Double avgRating, long ratingCount, List<DayPoint> days) {}
 
     public record AdminUser(Long id, String fullName, String email, String phone, Mode mode, boolean admin,
                             LocalDateTime createdAt, long tasksAsRequester, long tasksAsRunner, long responses) {}
@@ -26,7 +26,7 @@ public final class AdminDtos {
     public record AdminTask(Long id, String title, Category category, TaskStatus status, Integer reward,
                             String location, LocalDateTime deadline, LocalDateTime createdAt,
                             Long requesterId, String requesterName, Long runnerId, String runnerName,
-                            long responses) {}
+                            long responses, String paymentStatus) {}
 
     public record Ok(boolean ok) {}
 }

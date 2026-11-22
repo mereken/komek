@@ -73,6 +73,10 @@ public class AuthService {
         if (contact == null) {
             throw bad(byPhone ? "Введите номер в формате +7 701 234 56 78" : "Введите корректный e-mail");
         }
+        // Kazakhstan numbers: +7 and then a 6xx / 7xx code, 10 digits in total after +7
+        if (byPhone && !contact.matches("^\\+7[67]\\d{9}$")) {
+            throw bad("Введите номер в формате +7 (7XX) XXX-XX-XX");
+        }
         boolean taken = byPhone ? users.existsByPhone(contact) : users.existsByEmail(contact);
         if (taken) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,

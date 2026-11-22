@@ -8,6 +8,41 @@ export const CATEGORIES: { value: Category; label: string }[] = [
   { value: 'OTHER', label: 'Другое' },
 ];
 
+/** Labels of the address fields. Two-address orders ask "from where" and "to where". */
+export const PLACE_LABELS: Record<Category, {
+  from?: { label: string; placeholder: string };
+  to: { label: string; placeholder: string };
+}> = {
+  PICKUP: {
+    from: { label: 'Откуда забрать', placeholder: 'Пункт выдачи, магазин или адрес' },
+    to: { label: 'Куда доставить (где оставить)', placeholder: 'Адрес, куда привезти' },
+  },
+  BUY: {
+    from: { label: 'Где купить', placeholder: 'Магазин, торговый центр, аптека' },
+    to: { label: 'Куда привезти (где оставить)', placeholder: 'Адрес, куда привезти' },
+  },
+  QUEUE: { to: { label: 'Где нужно постоять', placeholder: 'Адрес, например «Центр обслуживания»' } },
+  DOG_WALK: { to: { label: 'Где забрать собаку', placeholder: 'Адрес' } },
+  OTHER: { to: { label: 'Адрес', placeholder: 'Где нужно выполнить поручение' } },
+};
+
+/** "Откуда → Куда" for two-address orders, otherwise just the address. */
+export const routeText = (t: Task) => (t.fromLocation ? `${t.fromLocation} → ${t.location}` : t.location);
+
+/** "1 балл", "2 балла", "5 баллов" */
+export function pointsText(n: number): string {
+  const abs = Math.abs(n);
+  const m10 = abs % 10;
+  const m100 = abs % 100;
+  const word = m10 === 1 && m100 !== 11 ? 'балл' : m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14) ? 'балла' : 'баллов';
+  return `${n.toLocaleString('ru-RU')} ${word}`;
+}
+
+export const isPaid = (t: Task) => t.payment?.status === 'PAID' || t.payment?.status === 'RELEASED';
+
+export const shortDateTime = (iso: string) =>
+  new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
 export function formatPhone(p: string): string {
   const d = p.replace(/\D/g, '');
   if (d.length !== 11) return p;
@@ -50,9 +85,13 @@ export function taskBadge(t: Task): BadgeInfo {
         ? { text: `Есть отклики · ${t.responseCount}`, tone: 'yellow' }
         : { text: t.owner ? 'Ждёт откликов' : 'Открыт', tone: 'gray' };
     case 'ACCEPTED':
-      return { text: 'Назначен', tone: 'orange' };
+      return t.payment?.status === 'PAID'
+        ? { text: 'Оплачен', tone: 'orange' }
+        : { text: 'Ждёт оплаты', tone: 'yellow' };
     case 'IN_PROGRESS':
-      return { text: 'В работе', tone: 'orange' };
+      return t.awaitingConfirmation
+        ? { text: 'Ждёт подтверждения', tone: 'yellow' }
+        : { text: 'В работе', tone: 'orange' };
     case 'DONE':
       return { text: 'Выполнен', tone: 'green' };
     default:

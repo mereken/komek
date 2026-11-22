@@ -14,6 +14,9 @@ import TaskPage from './pages/TaskPage';
 import Responders from './pages/Responders';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
+import EditProfile from './pages/EditProfile';
+import Wallet from './pages/Wallet';
+import Pay from './pages/Pay';
 
 const HOME = '/home';
 
@@ -57,7 +60,10 @@ export default function App() {
           <Route path="/tasks" element={<ForMode mode="RUNNER" fallback="/orders"><Tasks /></ForMode>} />
           <Route path="/task/:id" element={<TaskPage />} />
           <Route path="/task/:id/responders" element={<Responders />} />
+          <Route path="/task/:id/pay" element={<Pay />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/edit" element={<EditProfile />} />
+          <Route path="/wallet" element={<Wallet />} />
         </Route>
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
       </Route>

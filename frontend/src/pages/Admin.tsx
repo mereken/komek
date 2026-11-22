@@ -25,6 +25,8 @@ const STATUS: Record<TaskStatus, { text: string; tone: 'yellow' | 'orange' | 'gr
   CANCELLED: { text: 'Отменён', tone: 'gray' },
 };
 
+const PAYMENT: Record<string, string> = { PAID: 'Резерв', RELEASED: 'Выплачено', REFUNDED: 'Возврат' };
+
 const dateTime = (iso: string) =>
   new Date(iso).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
@@ -81,6 +83,8 @@ function StatsTab() {
     { label: 'Заказов', value: String(data.tasks), hint: `+${data.tasks7d} за 7 дней` },
     { label: 'Откликов', value: String(data.responses) },
     { label: 'Выполнено на сумму', value: money(data.doneReward) },
+    { label: 'Комиссия платформы', value: money(data.commission), hint: 'с выплаченных заказов' },
+    { label: 'Зарезервировано', value: money(data.held), hint: 'оплачено, ждёт подтверждения' },
     {
       label: 'Средняя оценка',
       value: data.avgRating == null ? '—' : `★ ${data.avgRating}`,
@@ -287,6 +291,7 @@ function TasksTab() {
               <th>Заказ</th>
               <th>Статус</th>
               <th>Цена</th>
+              <th>Оплата</th>
               <th>Заказчик</th>
               <th>Исполнитель</th>
               <th>Откликов</th>
@@ -306,6 +311,7 @@ function TasksTab() {
                   </td>
                   <td><Badge {...STATUS[t.status]} /></td>
                   <td>{money(t.reward)}</td>
+                  <td>{t.paymentStatus ? PAYMENT[t.paymentStatus] ?? t.paymentStatus : '—'}</td>
                   <td>{t.requesterName}</td>
                   <td>{t.runnerName ?? '—'}</td>
                   <td>{t.responses}</td>

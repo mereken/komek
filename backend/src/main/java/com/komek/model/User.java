@@ -29,6 +29,27 @@ public class User {
     @Column(nullable = false, length = 10)
     private Mode mode = Mode.REQUESTER;
 
+    /** Random part of the public photo URL; null = no photo. The image itself lives in the avatars table. */
+    @Column(name = "avatar_key", length = 40)
+    private String avatarKey;
+
+    /** Wallet balance in points (1 point = 1 tenge). Change only through WalletService. */
+    @Column(columnDefinition = "bigint default 0")
+    private long balance;
+
+    // Saved bank card. Demo only: we keep just the display data, never the full number or CVC.
+    @Column(name = "card_last4", length = 4)
+    private String cardLast4;
+
+    @Column(name = "card_brand", length = 20)
+    private String cardBrand;
+
+    @Column(name = "card_holder", length = 60)
+    private String cardHolder;
+
+    @Column(name = "card_expiry", length = 5)
+    private String cardExpiry;
+
     // Admin flag. Set by hand in the database: UPDATE users SET is_admin = true WHERE id = ...
     @Column(name = "is_admin", columnDefinition = "boolean default false")
     private boolean admin;
@@ -51,5 +72,18 @@ public class User {
     public Mode getMode() { return mode; }
     public void setMode(Mode v) { this.mode = v; }
     public boolean isAdmin() { return admin; }
+    public String getAvatarKey() { return avatarKey; }
+    public void setAvatarKey(String v) { this.avatarKey = v; }
+    public long getBalance() { return balance; }
+    public void setBalance(long v) { this.balance = v; }
+    public String getCardLast4() { return cardLast4; }
+    public void setCardLast4(String v) { this.cardLast4 = v; }
+    public String getCardBrand() { return cardBrand; }
+    public void setCardBrand(String v) { this.cardBrand = v; }
+    public String getCardHolder() { return cardHolder; }
+    public void setCardHolder(String v) { this.cardHolder = v; }
+    public String getCardExpiry() { return cardExpiry; }
+    public void setCardExpiry(String v) { this.cardExpiry = v; }
+    public boolean hasCard() { return cardLast4 != null; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

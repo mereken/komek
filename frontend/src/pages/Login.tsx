@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import Logo from '../components/Logo';
+import PasswordInput from '../components/PasswordInput';
+import { isValidEmail } from '../validation';
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -16,9 +18,22 @@ export default function Login() {
     e.preventDefault();
     setError('');
     setInfo('');
+
+    const value = login.trim();
+    const digits = value.replace(/\D/g, '');
+    const looksLikeEmail = value.includes('@');
+    if (!value || (looksLikeEmail ? !isValidEmail(value) : digits.length < 10 || digits.length > 11)) {
+      setError('Введите номер телефона (+7 700 000 00 00) или e-mail');
+      return;
+    }
+    if (!password) {
+      setError('Введите пароль');
+      return;
+    }
+
     setBusy(true);
     try {
-      signIn(await api.login(login, password));
+      signIn(await api.login(value, password));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -35,15 +50,14 @@ export default function Login() {
 
         <div className="field">
           <label htmlFor="login">Телефон или e-mail</label>
-          <input id="login" autoComplete="username" placeholder="+7 xxx-xxx-xxxx" value={login}
+          <input id="login" autoComplete="username" placeholder="+7 700 000 00 00 или e-mail" value={login}
                  onChange={(e) => setLogin(e.target.value)} />
         </div>
 
         <div className="field">
           <label htmlFor="password">Пароль</label>
-          <input id="password" type="password" autoComplete="current-password" placeholder="введите пароль"
-                 className={error ? 'invalid' : ''} value={password}
-                 onChange={(e) => setPassword(e.target.value)} />
+          <PasswordInput id="password" autoComplete="current-password" placeholder="введите пароль"
+                         invalid={!!error} value={password} onChange={setPassword} />
           {error && <div className="err">{error}</div>}
         </div>
 
