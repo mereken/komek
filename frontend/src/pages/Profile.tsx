@@ -51,6 +51,12 @@ export default function Profile() {
         </div>
       </div>
 
+      {!user.phone && (
+        <Link to="/profile/edit" className="note warn phone-warn">
+          Добавьте номер телефона: без него нельзя создавать заказы и откликаться. <b>Добавить</b>
+        </Link>
+      )}
+
       <Link to="/wallet" className="wallet-link">
         <div>
           <span className="k">Кошелёк</span>

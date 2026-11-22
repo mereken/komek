@@ -257,6 +257,8 @@ export const api = {
     request<AuthResponse>('/auth/login', 'POST', { login, password }),
   me: () => request<User>('/users/me'),
   setMode: (mode: Mode) => request<User>('/users/me/mode', 'PATCH', { mode }),
+  phoneStart: (phone: string) => request<StartResponse>('/users/me/phone/start', 'POST', { phone }),
+  phoneVerify: (code: string) => request<User>('/users/me/phone/verify', 'POST', { code }),
   updateProfile: (fullName: string) => request<User>('/users/me', 'PATCH', { fullName }),
   setAvatar: (image: string) => request<User>('/users/me/avatar', 'PUT', { image }),
   removeAvatar: () => request<User>('/users/me/avatar', 'DELETE'),

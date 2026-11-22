@@ -59,8 +59,11 @@ public class TaskService {
         }
         boolean keepFrom = !from.isEmpty() && r.category() != Category.QUEUE && r.category() != Category.DOG_WALK;
 
+        User requester = user(uid);
+        requirePhone(requester);
+
         Task t = new Task();
-        t.setRequester(user(uid));
+        t.setRequester(requester);
         t.setCategory(r.category());
         String title = r.title() == null ? "" : r.title().trim();
         t.setTitle(title.isEmpty() ? r.category().getDefaultTitle() : title);
@@ -186,9 +189,11 @@ public class TaskService {
         if (responses.findByTaskIdAndRunnerId(taskId, uid).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Вы уже откликнулись на этот заказ");
         }
+        User runner = user(uid);
+        requirePhone(runner);
         TaskResponse r = new TaskResponse();
         r.setTask(t);
-        r.setRunner(user(uid));
+        r.setRunner(runner);
         r.setPrice(req.price() == null ? t.getReward() : req.price());
         responses.save(r);
         return toDto(t, uid);
@@ -312,6 +317,13 @@ public class TaskService {
 
     private User user(Long id) {
         return users.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Пользователь не найден"));
+    }
+
+    /** The two sides talk by phone, so an order or a response needs a phone number in the profile. */
+    private static void requirePhone(User u) {
+        if (u.getPhone() == null) {
+            throw bad("Добавьте номер телефона в профиле, чтобы с вами могли связаться");
+        }
     }
 
     private void requireOwner(Task t, Long uid) {

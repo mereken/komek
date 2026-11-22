@@ -1,11 +1,13 @@
 import { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, Category } from '../api';
+import { useAuth } from '../AuthContext';
 import { CATEGORIES, PLACE_LABELS } from '../format';
 import AddressInput from '../components/AddressInput';
 import BackButton from '../components/BackButton';
 import Dropdown from '../components/Dropdown';
 import MoneyInput from '../components/MoneyInput';
+import PhoneGateModal from '../components/PhoneGateModal';
 
 /** The deadline must be at least this many minutes from now (the backend checks the same). */
 const MIN_LEAD_MINUTES = 30;
@@ -26,7 +28,11 @@ type Errors = Partial<Record<'category' | 'from' | 'where' | 'when' | 'price', s
 
 export default function NewOrder() {
   const nav = useNavigate();
-  const [category, setCategory] = useState<Category | ''>('');
+  const { user } = useAuth();
+  const [params] = useSearchParams();
+  const fromTile = CATEGORIES.find((c) => c.value === params.get('category'))?.value ?? '';
+  const [gate, setGate] = useState(false); // the "add your phone number" window
+  const [category, setCategory] = useState<Category | ''>(fromTile);
   const [title, setTitle] = useState('');
   const [from, setFrom] = useState('');
   const [location, setLocation] = useState('');
@@ -56,6 +62,7 @@ export default function NewOrder() {
   async function onSubmit(ev: FormEvent) {
     ev.preventDefault();
     setError('');
+    if (!user?.phone) { setGate(true); return; }
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length > 0) return;
@@ -83,6 +90,13 @@ export default function NewOrder() {
     <form onSubmit={onSubmit} noValidate className="page-form">
       <BackButton fallback="/home" />
       <h1 className="title">Новый заказ</h1>
+
+      {!user?.phone && (
+        <div className="note warn">
+          Чтобы исполнитель мог с вами связаться, добавьте номер телефона.{' '}
+          <button type="button" className="link" onClick={() => setGate(true)}>Добавить номер</button>
+        </div>
+      )}
 
       <div className="field">
         <label htmlFor="cat">Что нужно сделать</label>
@@ -138,6 +152,7 @@ export default function NewOrder() {
       <div className="actions">
         <button className="btn" disabled={busy}>{busy ? 'Публикуем…' : 'Опубликовать'}</button>
       </div>
+      {gate && <PhoneGateModal onClose={() => setGate(false)} onDone={() => setGate(false)} />}
     </form>
   );
 }

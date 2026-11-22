@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api, Scope } from '../api';
 import { routeText, taskBadge, whenText } from '../format';
 import { useLoad } from '../hooks';
+import EmptyState from '../components/EmptyState';
 import Segmented from '../components/Segmented';
+import ListSkeleton from '../components/Skeleton';
 import TaskCard from '../components/TaskCard';
 
 export default function Orders() {
@@ -20,19 +21,20 @@ export default function Orders() {
       />
 
       {error && <div className="err">{error}</div>}
-      {loading && !data && <div className="empty">Загрузка…</div>}
+      {loading && !data && <ListSkeleton />}
       {data && data.length === 0 && (
-        <div className="empty">
-          {scope === 'active' ? (
-            <>Активных заказов пока нет.<br /><Link to="/new">Создать заказ</Link></>
-          ) : 'История пуста: здесь появятся выполненные и отменённые заказы.'}
-        </div>
+        scope === 'active' ? (
+          <EmptyState title="Активных заказов пока нет" text="Создайте заказ, и исполнители откликнутся на него." to="/new" action="Создать заказ" />
+        ) : (
+          <EmptyState title="История пуста" text="Здесь появятся выполненные и отменённые заказы." />
+        )
       )}
       {data?.map((t) => (
         <TaskCard
           key={t.id}
           to={`/task/${t.id}`}
           title={t.title}
+          category={t.category}
           place={routeText(t)}
           meta={t.runner ? `Исполнитель: ${t.runner.name}` : whenText(t.deadline).toLowerCase()}
           price={t.reward}

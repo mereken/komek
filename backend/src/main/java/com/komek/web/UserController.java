@@ -2,13 +2,17 @@ package com.komek.web;
 
 import com.komek.dto.AdminDtos.Ok;
 import com.komek.dto.AvatarRequest;
+import com.komek.dto.CodeRequest;
 import com.komek.dto.ModeRequest;
 import com.komek.dto.PasswordChangeRequest;
+import com.komek.dto.PhoneRequest;
 import com.komek.dto.ProfileRequest;
+import com.komek.dto.StartResponse;
 import com.komek.dto.UserDto;
 import com.komek.model.User;
 import com.komek.repo.UserRepository;
 import com.komek.service.AvatarService;
+import com.komek.service.PhoneVerificationService;
 import com.komek.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -24,12 +28,15 @@ public class UserController {
     private final TaskService tasks;
     private final AvatarService avatars;
     private final PasswordEncoder encoder;
+    private final PhoneVerificationService phones;
 
-    public UserController(UserRepository users, TaskService tasks, AvatarService avatars, PasswordEncoder encoder) {
+    public UserController(UserRepository users, TaskService tasks, AvatarService avatars, PasswordEncoder encoder,
+                          PhoneVerificationService phones) {
         this.users = users;
         this.tasks = tasks;
         this.avatars = avatars;
         this.encoder = encoder;
+        this.phones = phones;
     }
 
     @GetMapping("/me")
@@ -61,6 +68,18 @@ public class UserController {
     public UserDto removeAvatar(Authentication auth) {
         avatars.remove(current(auth).getId());
         return tasks.userDto(current(auth));
+    }
+
+    /** Add or change the phone number: step 1, a code is sent to the number. */
+    @PostMapping("/me/phone/start")
+    public StartResponse phoneStart(Authentication auth, @Valid @RequestBody PhoneRequest req) {
+        return phones.start(current(auth).getId(), req.phone());
+    }
+
+    /** Step 2: the code is confirmed, the number is saved. */
+    @PostMapping("/me/phone/verify")
+    public UserDto phoneVerify(Authentication auth, @Valid @RequestBody CodeRequest req) {
+        return tasks.userDto(phones.verify(current(auth).getId(), req.code()));
     }
 
     @PostMapping("/me/password")

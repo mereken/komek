@@ -8,6 +8,8 @@ import BackButton from '../components/BackButton';
 import Badge from '../components/Badge';
 import InfoBox from '../components/InfoBox';
 import MoneyInput from '../components/MoneyInput';
+import PhoneGateModal from '../components/PhoneGateModal';
+import StatusSteps from '../components/StatusSteps';
 import PersonRow from '../components/PersonRow';
 
 export default function TaskPage() {
@@ -88,6 +90,7 @@ function OwnerView({ task, onChange }: { task: Task; onChange: (t: Task) => void
       <BackButton fallback="/orders" />
       <h1 className="title">{task.title}</h1>
       <Badge {...taskBadge(task)} />
+      <StatusSteps task={task} />
       <InfoBox task={task} />
 
       {task.description && (
@@ -168,6 +171,7 @@ function RunnerView({ task, onChange }: { task: Task; onChange: (t: Task) => voi
   const nav = useNavigate();
   const { busy, error, run } = useAction(onChange);
   const [offering, setOffering] = useState(false);
+  const [gate, setGate] = useState(false); // "add your phone number" window
   const [price, setPrice] = useState(String(task.reward));
 
   const st = task.status;
@@ -194,6 +198,7 @@ function RunnerView({ task, onChange }: { task: Task; onChange: (t: Task) => voi
       <div className="m">{whenText(task.deadline).replace(/^Сегодня /, '').toLowerCase()}</div>
       <div className="m">Вы получите {money(task.payout)} · комиссия сервиса {task.commissionPercent}% ({money(task.commission)})</div>
       {mine && <div className="spaced-top"><Badge {...taskBadge(task)} /></div>}
+      {mine && <StatusSteps task={task} />}
 
       <InfoBox task={task} />
 
@@ -241,7 +246,7 @@ function RunnerView({ task, onChange }: { task: Task; onChange: (t: Task) => voi
       <div className="actions">
         {/* not responded yet */}
         {!mine && st === 'OPEN' && !responded && !offering && (
-          <button className="btn" onClick={() => setOffering(true)}>Откликнуться</button>
+          <button className="btn" onClick={() => (user?.phone ? setOffering(true) : setGate(true))}>Откликнуться</button>
         )}
         {!mine && st === 'OPEN' && !responded && offering && (
           <>
@@ -276,6 +281,8 @@ function RunnerView({ task, onChange }: { task: Task; onChange: (t: Task) => voi
           <button type="button" className="btn outline" onClick={() => nav('/tasks')}>К моим заданиям</button>
         )}
       </div>
+
+      {gate && <PhoneGateModal onClose={() => setGate(false)} onDone={() => { setGate(false); setOffering(true); }} />}
     </>
   );
 }

@@ -3,8 +3,10 @@ import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import Avatar from '../components/Avatar';
 import BackButton from '../components/BackButton';
+import PhoneVerifyForm from '../components/PhoneVerifyForm';
 import PasswordInput from '../components/PasswordInput';
 import PasswordRules from '../components/PasswordRules';
+import { formatPhone } from '../format';
 import { passwordOk } from '../validation';
 
 /** Crops the photo to a centered square, shrinks it to 256x256 and returns a small JPEG as a data URL. */
@@ -42,6 +44,8 @@ export default function EditProfile() {
   const [name, setName] = useState(user?.fullName ?? '');
   const [nameMsg, setNameMsg] = useState('');
   const [nameErr, setNameErr] = useState('');
+
+  const [changingPhone, setChangingPhone] = useState(false);
 
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoErr, setPhotoErr] = useState('');
@@ -146,8 +150,18 @@ export default function EditProfile() {
         <button className="btn" disabled={name.trim() === user.fullName}>Сохранить имя</button>
       </form>
 
-      <div className="section strong">Контакт</div>
-      <div className="card"><div className="m">{user.phone ?? user.email}</div><div className="hint">Номер и e-mail пока изменить нельзя: они нужны для входа.</div></div>
+      <div className="section strong">Телефон</div>
+      <div className="card">
+        {user.phone ? <b>{formatPhone(user.phone)}</b> : <div className="m">Номер не указан. Он нужен, чтобы создавать заказы и откликаться.</div>}
+        {user.email && <div className="m">E-mail: {user.email}</div>}
+        {changingPhone ? (
+          <PhoneVerifyForm onDone={() => setChangingPhone(false)} />
+        ) : (
+          <button type="button" className="link" onClick={() => setChangingPhone(true)}>
+            {user.phone ? 'Изменить номер' : 'Добавить номер'}
+          </button>
+        )}
+      </div>
 
       <div className="section strong">Сменить пароль</div>
       <form onSubmit={savePassword} noValidate>

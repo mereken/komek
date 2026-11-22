@@ -4,7 +4,11 @@ import { api } from '../api';
 import { useAuth } from '../AuthContext';
 import Logo from '../components/Logo';
 import PasswordInput from '../components/PasswordInput';
-import { isValidEmail } from '../validation';
+import { formatNational, isValidEmail, parsePhoneInput } from '../validation';
+
+/** The field switches to the +7 mask when it starts with + / 6 / 7 / 8 and has no letters or @; otherwise it is an e-mail. */
+const PHONE_START = /^\s*[+678]/;
+const HAS_LETTERS = /[A-Za-zА-Яа-яЁё@]/;
 
 export default function Login() {
   const { signIn } = useAuth();
@@ -14,16 +18,22 @@ export default function Login() {
   const [info, setInfo] = useState('');
   const [busy, setBusy] = useState(false);
 
+  function onLoginChange(raw: string) {
+    if (!PHONE_START.test(raw) || HAS_LETTERS.test(raw)) { setLogin(raw); return; }
+    const prev = login.trim().startsWith('+7') ? login.replace(/\D/g, '').slice(1) : login.replace(/\D/g, '');
+    setLogin(formatNational(parsePhoneInput(raw, prev)));
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
     setInfo('');
 
     const value = login.trim();
-    const digits = value.replace(/\D/g, '');
-    const looksLikeEmail = value.includes('@');
-    if (!value || (looksLikeEmail ? !isValidEmail(value) : digits.length < 10 || digits.length > 11)) {
-      setError('Введите номер телефона (+7 700 000 00 00) или e-mail');
+    const isEmail = value.includes('@');
+    // any complete +7 number is accepted here, so older accounts keep working
+    if (!value || (isEmail ? !isValidEmail(value) : parsePhoneInput(value, '').length !== 10)) {
+      setError('Введите номер полностью (+7 700 000 00 00) или e-mail');
       return;
     }
     if (!password) {
@@ -50,8 +60,8 @@ export default function Login() {
 
         <div className="field">
           <label htmlFor="login">Телефон или e-mail</label>
-          <input id="login" autoComplete="username" placeholder="+7 700 000 00 00 или e-mail" value={login}
-                 onChange={(e) => setLogin(e.target.value)} />
+          <input id="login" autoComplete="username" inputMode="email" placeholder="+7 (700) 000-00-00 или e-mail" value={login}
+                 className={error && !password ? 'invalid' : ''} onChange={(e) => onLoginChange(e.target.value)} />
         </div>
 
         <div className="field">

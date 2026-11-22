@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api, Scope, WorkItem } from '../api';
 import { routeText, workBadge } from '../format';
 import { useLoad } from '../hooks';
+import EmptyState from '../components/EmptyState';
 import Segmented from '../components/Segmented';
+import ListSkeleton from '../components/Skeleton';
 import TaskCard from '../components/TaskCard';
 
 function Card({ item }: { item: WorkItem }) {
@@ -12,6 +13,7 @@ function Card({ item }: { item: WorkItem }) {
     <TaskCard
       to={`/task/${t.id}`}
       title={t.title}
+      category={t.category}
       place={routeText(t)}
       meta={`Заказчик: ${t.requester.name}`}
       price={item.response ? item.myPrice ?? t.reward : t.reward}
@@ -38,13 +40,13 @@ export default function Tasks() {
       />
 
       {error && <div className="err">{error}</div>}
-      {loading && !data && <div className="empty">Загрузка…</div>}
+      {loading && !data && <ListSkeleton />}
       {data && data.length === 0 && (
-        <div className="empty">
-          {scope === 'active' ? (
-            <>Пока нет активных заданий.<br /><Link to="/home">Найти задание</Link></>
-          ) : 'История пуста: здесь появятся выполненные задания.'}
-        </div>
+        scope === 'active' ? (
+          <EmptyState title="Пока нет активных заданий" text="Откликайтесь на задания в ленте, и они появятся здесь." to="/home" action="Найти задание" />
+        ) : (
+          <EmptyState title="История пуста" text="Здесь появятся выполненные задания." />
+        )
       )}
 
       {scope === 'active' ? (
