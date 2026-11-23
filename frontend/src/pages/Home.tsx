@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, Category } from '../api';
 import { useAuth } from '../AuthContext';
-import { CATEGORIES, firstName, money, routeText, whenText } from '../format';
+import { CATEGORIES, firstName, money, routeText, taskWhen } from '../format';
 import { useLoad } from '../hooks';
 import CategoryIcon from '../components/CategoryIcon';
 import EmptyState from '../components/EmptyState';
 import Hero from '../components/Hero';
 import Logo from '../components/Logo';
+import BellLink from '../components/BellLink';
 import ListSkeleton from '../components/Skeleton';
 import TaskCard from '../components/TaskCard';
 
@@ -20,8 +21,8 @@ export default function Home() {
 function RequesterHome({ name }: { name: string }) {
   return (
     <>
-      <Logo />
-      <Hero compact title={<>Поручите дело.<br />Займитесь своим.</>} sub="Очередь, посылка, прогулка с собакой" />
+      <div className="home-head"><Logo /><BellLink /></div>
+      <Hero title={<>Поручите дело.<br />Займитесь своим.</>} sub="Очередь, посылка, прогулка с собакой" />
       <h1 className="greeting">Привет, {name}</h1>
 
       <h2 className="h2">Что нужно сделать?</h2>
@@ -40,9 +41,6 @@ function RequesterHome({ name }: { name: string }) {
     </>
   );
 }
-
-/** Tappable examples under the search field: they show what can be searched. */
-const SEARCH_EXAMPLES = ['Мега', 'аптека', 'посылка', 'собака'];
 
 /** Runner's feed: open tasks of other people, with search and category filter. */
 function RunnerHome() {
@@ -63,27 +61,19 @@ function RunnerHome() {
 
   return (
     <>
-      <Logo />
+      <div className="home-head"><Logo /><BellLink /></div>
 
       <div className="searchbox">
         <svg className="searchbox-ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="7" />
           <path d="M20 20l-3.5-3.5" />
         </svg>
-        <input type="text" enterKeyHint="search" autoComplete="off" placeholder="Поиск заданий"
+        <input type="text" enterKeyHint="search" autoComplete="off" placeholder="Поиск по заданиям и адресам"
                value={q} onChange={(e) => setQ(e.target.value)} />
         {q && <button type="button" className="searchbox-clear" aria-label="Очистить поиск" onClick={() => setQ('')}>×</button>}
       </div>
-      {q === '' && (
-        <div className="examples">
-          <span>Например:</span>
-          {SEARCH_EXAMPLES.map((e) => (
-            <button key={e} type="button" onClick={() => setQ(e)}>{e}</button>
-          ))}
-        </div>
-      )}
 
-      <Hero compact title={<>Выполните дело.<br />Заработайте в свободное время.</>} />
+      <Hero title={<>Выполните дело.<br />Заработайте в свободное время.</>} />
 
       <div className="chips">
         <button type="button" className={'chip' + (cat === '' ? ' on' : '')} onClick={() => setCat('')}>Все</button>
@@ -119,9 +109,13 @@ function RunnerHome() {
           title={t.title}
           category={t.category}
           place={routeText(t)}
-          meta={whenText(t.deadline).toLowerCase()}
+          meta={taskWhen(t).toLowerCase()}
           price={t.reward}
-          badge={t.myPrice != null ? { text: `Вы откликнулись · ${money(t.myPrice)}`, tone: 'yellow' } : undefined}
+          badge={
+            t.changedSinceResponse ? { text: 'Заказ изменён · вы откликнулись', tone: 'orange' }
+              : t.myPrice != null ? { text: `Вы откликнулись · ${money(t.myPrice)}`, tone: 'yellow' } : undefined
+          }
+          fresh={t.updates > 0}
         />
       ))}
     </>

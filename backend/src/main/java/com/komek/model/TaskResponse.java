@@ -25,6 +25,10 @@ public class TaskResponse {
     @Column(nullable = false)
     private Integer price;
 
+    /** The task's edit version this runner has already looked at. Lower than the task's = "заказ изменён". */
+    @Column(name = "seen_version", columnDefinition = "integer default 0")
+    private int seenVersion;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -38,5 +42,7 @@ public class TaskResponse {
     public void setRunner(User v) { this.runner = v; }
     public Integer getPrice() { return price; }
     public void setPrice(Integer v) { this.price = v; }
+    public int getSeenVersion() { return seenVersion; }
+    public void setSeenVersion(int v) { this.seenVersion = v; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

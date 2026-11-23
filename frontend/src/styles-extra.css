@@ -260,3 +260,68 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--brand); outline
 
 .phone-warn { display: block; text-decoration: none; margin-bottom: 12px; }
 .phone-warn b { display: inline; color: var(--brand); }
+
+/* ======================= Stages 2-4: order form, switches, details, news ======================= */
+
+/* ---- switch (toggle) */
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; margin-bottom: 8px; cursor: pointer; }
+.switch-text { display: flex; flex-direction: column; gap: 2px; }
+.switch-text b { font-size: 15px; font-weight: 600; }
+.switch-text small { color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.switch { position: relative; flex: none; width: 48px; height: 28px; }
+.switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; z-index: 1; }
+.switch-track { position: absolute; inset: 0; border-radius: 999px; background: #cdd6d3; transition: background 0.15s; }
+.switch-track::after {
+  content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); transition: transform 0.15s;
+}
+.switch input:checked + .switch-track { background: var(--brand); }
+.switch input:checked + .switch-track::after { transform: translateX(20px); }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+/* ---- address details */
+.details { margin-top: 6px; }
+.small-link { font-size: 13px; font-weight: 600; padding: 4px 0; text-align: left; }
+.details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.details-grid .wide { grid-column: 1 / -1; }
+.details-grid input { height: 46px; font-size: 14px; }
+.details-line { display: block; margin-top: 2px; color: var(--muted); font-size: 12.5px; font-weight: 400; line-height: 1.4; }
+.infobox small.details-line { display: block; }
+
+/* ---- time window */
+.when-window { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.mini-label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.field .seg + input, .field .seg + .when-window { margin-top: 10px; }
+
+/* ---- lists: repeat link, news dot, header with the bell */
+.card-wrap { margin-bottom: 4px; }
+.card-wrap .tcard { margin-bottom: 4px; }
+.repeat-link { display: inline-block; margin: 0 0 14px 6px; color: var(--brand); font-size: 13px; font-weight: 600; text-decoration: none; }
+.repeat-link:hover { text-decoration: underline; }
+.fresh-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--err); margin-right: 7px; vertical-align: middle; flex: none; }
+
+.home-head { display: flex; align-items: center; justify-content: space-between; }
+.bell { position: relative; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; color: var(--ink); text-decoration: none; }
+.bell:hover { background: var(--soft); }
+.bell-badge {
+  position: absolute; top: 4px; right: 3px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: var(--err); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center;
+}
+
+/* ---- notifications list */
+.notif {
+  display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 14px 12px; border: 0; border-bottom: 1px solid var(--line);
+  background: none; font: inherit; text-align: left; color: var(--ink); cursor: pointer; border-radius: 12px;
+}
+.notif:hover { background: var(--soft); }
+.notif.unread { background: var(--tint); }
+.notif-ico { flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--soft); color: var(--brand); display: grid; place-items: center; font-weight: 700; }
+.notif.unread .notif-ico { background: #fff; }
+.notif-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.notif-text { font-size: 14px; line-height: 1.4; }
+.notif-main small { color: var(--muted); font-size: 12px; }
+.notif .fresh-dot { margin: 6px 0 0; }
+
+/* ---- wallet: advance rows */
+.adv-tag { display: inline-block; margin-left: 8px; padding: 2px 8px; border-radius: 999px; background: #fbe3cf; color: #b4570b; font-size: 11px; font-weight: 600; vertical-align: middle; }
+.feed-head .title { margin: 0; }

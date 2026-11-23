@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, Task } from '../api';
 import { useAuth } from '../AuthContext';
-import { isPaid, money, taskBadge, whenText } from '../format';
+import { isPaid, money, taskBadge, taskWhen } from '../format';
 import { useLoad } from '../hooks';
 import BackButton from '../components/BackButton';
 import Badge from '../components/Badge';
@@ -111,15 +111,21 @@ function OwnerView({ task, onChange }: { task: Task; onChange: (t: Task) => void
       {st === 'ACCEPTED' && !paid && (
         <div className="card pay-card">
           <b>Оплатите заказ</b>
-          <p className="m">Деньги будут зарезервированы и уйдут исполнителю только после того, как вы подтвердите, что работа выполнена.</p>
-          <Link className="btn" to={`/task/${task.id}/pay`}>Оплатить {money(task.reward)}</Link>
+          <p className="m">
+            Вознаграждение уйдёт исполнителю только после того, как вы подтвердите, что работа выполнена.
+            {task.budget > 0 && <> Деньги на расходы ({money(task.budget)}) исполнитель получит авансом, когда начнёт.</>}
+          </p>
+          <Link className="btn" to={`/task/${task.id}/pay`}>Оплатить {money(task.reward + task.budget)}</Link>
         </div>
       )}
       {st === 'ACCEPTED' && paid && (
-        <div className="note ok">✓ Оплачено: {money(task.payment!.amount)} зарезервированы до подтверждения работы. Исполнитель может приступать.</div>
+        <div className="note ok">✓ Оплачено: {money(task.payment!.amount)} зарезервированы. Исполнитель может приступать.</div>
       )}
       {st === 'IN_PROGRESS' && !task.awaitingConfirmation && (
-        <div className="note">Исполнитель выполняет заказ. Деньги ({money(task.payment?.amount ?? task.reward)}) зарезервированы.</div>
+        <div className="note">
+          Исполнитель выполняет заказ. Вознаграждение ({money(task.reward)}) зарезервировано.
+          {task.budget > 0 && <> Аванс на расходы ({money(task.budget)}) выдан исполнителю: остаток или нехватку решите с ним по телефону.</>}
+        </div>
       )}
       {st === 'IN_PROGRESS' && task.awaitingConfirmation && (
         <div className="card pay-card">
@@ -129,10 +135,13 @@ function OwnerView({ task, onChange }: { task: Task; onChange: (t: Task) => void
         </div>
       )}
       {st === 'DONE' && task.payment?.status === 'RELEASED' && (
-        <div className="note ok">Заказ оплачен: {money(task.payment.amount)}. Исполнитель получил {money(task.payment.payout)}, комиссия сервиса {task.commissionPercent}%.</div>
+        <div className="note ok">
+          Заказ оплачен: {money(task.payment.amount)}. Исполнитель получил за работу {money(task.payment.payout)} (комиссия сервиса {task.commissionPercent}%)
+          {task.payment.budget > 0 && <>, а {money(task.payment.budget)} были авансом на расходы</>}.
+        </div>
       )}
       {st === 'CANCELLED' && task.payment?.status === 'REFUNDED' && (
-        <div className="note">Заказ отменён. {money(task.payment.amount)} вернулись на ваш баланс — <Link to="/wallet">кошелёк</Link>.</div>
+        <div className="note">Заказ отменён. Деньги вернулись на ваш баланс: <Link to="/wallet">кошелёк</Link>.</div>
       )}
 
       {st === 'DONE' && (
@@ -156,6 +165,12 @@ function OwnerView({ task, onChange }: { task: Task; onChange: (t: Task) => void
       <div className="actions">
         {st === 'OPEN' && task.responseCount > 0 && (
           <Link className="btn" to={`/task/${task.id}/responders`}>Посмотреть отклики ({task.responseCount})</Link>
+        )}
+        {st === 'OPEN' && (
+          <Link className="btn outline" to={`/new?edit=${task.id}`}>Изменить заказ</Link>
+        )}
+        {(st === 'DONE' || st === 'CANCELLED') && (
+          <Link className="btn outline" to={`/new?repeat=${task.id}`}>↻ Повторить заказ</Link>
         )}
         {(st === 'OPEN' || st === 'ACCEPTED') && (
           <button type="button" className="link danger" disabled={busy} onClick={cancel}>Отменить заказ</button>
@@ -195,12 +210,26 @@ function RunnerView({ task, onChange }: { task: Task; onChange: (t: Task) => voi
       <BackButton fallback="/home" />
       <h1 className="title">{task.title}</h1>
       <div className="bigprice">{money(task.reward)}</div>
-      <div className="m">{whenText(task.deadline).replace(/^Сегодня /, '').toLowerCase()}</div>
-      <div className="m">Вы получите {money(task.payout)} · комиссия сервиса {task.commissionPercent}% ({money(task.commission)})</div>
+      <div className="m">{taskWhen(task).toLowerCase()}</div>
+      <div className="m">Вы заработаете {money(task.payout)} · комиссия сервиса {task.commissionPercent}% ({money(task.commission)})</div>
+      {!task.allowOffers && <div className="m">Цена фиксированная</div>}
       {mine && <div className="spaced-top"><Badge {...taskBadge(task)} /></div>}
       {mine && <StatusSteps task={task} />}
 
+      {task.changedSinceResponse && (
+        <div className="note warn">
+          <b>Заказ изменён.</b> {task.lastChange ?? 'Заказчик поменял условия.'} Ваш отклик сохранён, при необходимости отзовите его.
+        </div>
+      )}
+
       <InfoBox task={task} />
+
+      {task.budget > 0 && (
+        <div className="note">
+          На расходы вам выдадут аванс {money(task.budget)}, когда вы начнёте. Это деньги заказчика, а не ваш заработок.
+          Остаток или нехватку решите с заказчиком по телефону.
+        </div>
+      )}
 
       {task.description && (
         <>
@@ -245,10 +274,16 @@ function RunnerView({ task, onChange }: { task: Task; onChange: (t: Task) => voi
 
       <div className="actions">
         {/* not responded yet */}
-        {!mine && st === 'OPEN' && !responded && !offering && (
+        {!mine && st === 'OPEN' && !responded && task.allowOffers && !offering && (
           <button className="btn" onClick={() => (user?.phone ? setOffering(true) : setGate(true))}>Откликнуться</button>
         )}
-        {!mine && st === 'OPEN' && !responded && offering && (
+        {!mine && st === 'OPEN' && !responded && !task.allowOffers && (
+          <button className="btn" disabled={busy}
+                  onClick={() => (user?.phone ? run(() => api.respond(task.id, task.reward)) : setGate(true))}>
+            {busy ? 'Отправляем…' : `Откликнуться за ${money(task.reward)}`}
+          </button>
+        )}
+        {!mine && st === 'OPEN' && !responded && task.allowOffers && offering && (
           <>
             <div className="field tight">
               <label htmlFor="offer">Ваша цена</label>

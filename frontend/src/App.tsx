@@ -17,6 +17,7 @@ import Admin from './pages/Admin';
 import EditProfile from './pages/EditProfile';
 import Wallet from './pages/Wallet';
 import Pay from './pages/Pay';
+import Notifications from './pages/Notifications';
 
 const HOME = '/home';
 
@@ -64,6 +65,7 @@ export default function App() {
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/edit" element={<EditProfile />} />
           <Route path="/wallet" element={<Wallet />} />
+          <Route path="/notifications" element={<Notifications />} />
         </Route>
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
       </Route>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, Scope } from '../api';
-import { routeText, taskBadge, whenText } from '../format';
+import { ratingReminder, routeText, taskBadge, taskWhen } from '../format';
 import { useLoad } from '../hooks';
 import EmptyState from '../components/EmptyState';
 import Segmented from '../components/Segmented';
@@ -30,16 +31,21 @@ export default function Orders() {
         )
       )}
       {data?.map((t) => (
-        <TaskCard
-          key={t.id}
-          to={`/task/${t.id}`}
-          title={t.title}
-          category={t.category}
-          place={routeText(t)}
-          meta={t.runner ? `Исполнитель: ${t.runner.name}` : whenText(t.deadline).toLowerCase()}
-          price={t.reward}
-          badge={taskBadge(t)}
-        />
+        <div key={t.id} className="card-wrap">
+          <TaskCard
+            to={`/task/${t.id}`}
+            title={t.title}
+            category={t.category}
+            place={routeText(t)}
+            meta={t.runner ? `Исполнитель: ${t.runner.name}` : taskWhen(t).toLowerCase()}
+            price={t.reward}
+            badge={ratingReminder(t, true) ?? taskBadge(t)}
+            fresh={t.updates > 0}
+          />
+          {scope === 'history' && (
+            <Link className="repeat-link" to={`/new?repeat=${t.id}`}>↻ Повторить заказ</Link>
+          )}
+        </div>
       ))}
     </>
   );

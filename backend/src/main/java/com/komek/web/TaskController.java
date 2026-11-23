@@ -24,6 +24,12 @@ public class TaskController {
     @ResponseStatus(HttpStatus.CREATED)
     public TaskDto create(Authentication a, @Valid @RequestBody CreateTaskRequest r) { return service.create(uid(a), r); }
 
+    /** Edit an order (only while no runner is chosen). */
+    @PutMapping("/{id}")
+    public TaskDto update(Authentication a, @PathVariable Long id, @Valid @RequestBody CreateTaskRequest r) {
+        return service.update(uid(a), id, r);
+    }
+
     @GetMapping("/mine")
     public List<TaskDto> mine(Authentication a, @RequestParam(defaultValue = "active") String scope) {
         return service.mine(uid(a), scope);

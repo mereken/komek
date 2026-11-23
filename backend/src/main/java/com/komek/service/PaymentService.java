@@ -18,9 +18,12 @@ import java.util.Optional;
 
 /**
  * Order payments with escrow ("безопасная сделка"), simulated:
- *   pay()     requester pays -> PAID: the money is reserved for the order
- *   release() requester confirmed the work -> RELEASED: runner gets the payout, the platform keeps the commission
- *   refund()  order cancelled before the work is accepted -> REFUNDED: the points go back to the requester's balance
+ *   pay()            requester pays reward + budget -> PAID: the money is reserved for the order
+ *   releaseAdvance() the work starts -> the budget (money for expenses) goes to the runner as an advance
+ *   release()        requester confirmed the work -> RELEASED: runner gets reward - commission
+ *   refund()         order cancelled -> REFUNDED: the reserved points go back to the requester's balance
+ * The commission is taken from the reward only. The advance is not earnings; leftovers or shortfalls of the
+ * expense money are settled between the two people directly (by phone).
  * The caller (TaskService / AdminService) locks the task row before calling.
  */
 @Service
@@ -34,14 +37,16 @@ public class PaymentService {
 
     private final PaymentRepository payments;
     private final WalletService wallet;
+    private final NotificationService notifications;
     private final int percent;
     private final boolean testMode;
 
-    public PaymentService(PaymentRepository payments, WalletService wallet,
+    public PaymentService(PaymentRepository payments, WalletService wallet, NotificationService notifications,
                           @Value("${app.commission-percent}") int percent,
                           @Value("${app.payments.test-mode}") boolean testMode) {
         this.payments = payments;
         this.wallet = wallet;
+        this.notifications = notifications;
         this.percent = percent;
         this.testMode = testMode;
     }
@@ -63,7 +68,7 @@ public class PaymentService {
     public PaymentInfoDto info(Long taskId) {
         return payments.findFirstByTaskIdAndStatusInOrderByIdDesc(taskId, REAL)
                 .map(p -> new PaymentInfoDto(p.getStatus(), p.getAmount(), p.getCommission(), p.getPayout(),
-                        p.getMethod(), p.getCardLast4(), p.getUpdatedAt()))
+                        p.getBudget(), p.isAdvanceReleased(), p.getMethod(), p.getCardLast4(), p.getUpdatedAt()))
                 .orElse(null);
     }
 
@@ -71,7 +76,9 @@ public class PaymentService {
 
     public Outcome pay(Task t, PayRequest r) {
         if (isHeld(t.getId())) throw new ResponseStatusException(HttpStatus.CONFLICT, "Заказ уже оплачен");
-        int amount = t.getReward();
+        int reward = t.getReward();
+        int budget = t.getBudget();
+        int amount = reward + budget; // what the requester pays
         User payer = wallet.lock(t.getRequester().getId());
 
         Payment p = new Payment();
@@ -79,8 +86,9 @@ public class PaymentService {
         p.setPayer(payer);
         p.setPayee(t.getRunner());
         p.setAmount(amount);
-        p.setCommission(commissionOf(amount));
-        p.setPayout(amount - p.getCommission());
+        p.setBudget(budget);
+        p.setCommission(commissionOf(reward)); // commission is taken from the reward only
+        p.setPayout(reward - p.getCommission());
         p.setMethod(r.method());
 
         if (r.method() == PaymentMethod.BALANCE) {
@@ -124,6 +132,20 @@ public class PaymentService {
 
     // -------------------------------------------------------- release / refund
 
+    /** The work starts: the money for expenses goes to the runner's wallet as an advance (not earnings, no commission). */
+    public void releaseAdvance(Task t) {
+        Optional<Payment> held = payments.findFirstByTaskIdAndStatusInOrderByIdDesc(t.getId(), HELD);
+        if (held.isEmpty()) return;
+        Payment p = held.get();
+        if (p.getBudget() <= 0 || p.isAdvanceReleased()) return;
+        User runner = wallet.lock(p.getPayee().getId());
+        wallet.credit(runner, p.getBudget(), TxType.PAYOUT, t,
+                "Аванс на расходы по заказу №" + t.getId() + " (деньги заказчика, не доход)", true);
+        p.setAdvanceReleased(true);
+        notifications.send(runner, NotificationService.PROFILE, "ADVANCE", t,
+                "На баланс зачислен аванс на расходы: " + p.getBudget() + " ₸ (деньги заказчика, не ваш доход)");
+    }
+
     /** The requester confirmed the work: the runner gets the payout, the commission stays with the platform. */
     public void release(Task t) {
         Optional<Payment> held = payments.findFirstByTaskIdAndStatusInOrderByIdDesc(t.getId(), HELD);
@@ -133,6 +155,8 @@ public class PaymentService {
         p.setStatus(PaymentStatus.RELEASED);
         wallet.credit(runner, p.getPayout(), TxType.PAYOUT, t,
                 "Оплата за заказ №" + t.getId() + " «" + t.getTitle() + "» (комиссия " + percent + "%: " + p.getCommission() + " ₸)");
+        notifications.send(runner, NotificationService.PROFILE, "PAYOUT", t,
+                "Вам начислено " + p.getPayout() + " ₸ за заказ «" + t.getTitle() + "»");
     }
 
     /** Gives the reserved money back (as points) to the requester. Does nothing if nothing is reserved. */
@@ -142,7 +166,11 @@ public class PaymentService {
         Payment p = held.get();
         User payer = wallet.lock(p.getPayer().getId());
         p.setStatus(PaymentStatus.REFUNDED);
-        wallet.credit(payer, p.getAmount(), TxType.REFUND, t, note + " (заказ №" + t.getId() + ")");
+        // an advance that is already with the runner cannot be taken back: only the rest returns
+        int back = p.getAmount() - (p.isAdvanceReleased() ? p.getBudget() : 0);
+        wallet.credit(payer, back, TxType.REFUND, t, note + " (заказ №" + t.getId() + ")");
+        notifications.send(payer, NotificationService.PROFILE, "REFUND", t,
+                "На баланс вернулось " + back + " ₸ по заказу «" + t.getTitle() + "»");
     }
 
     private static ResponseStatusException bad(String msg) {

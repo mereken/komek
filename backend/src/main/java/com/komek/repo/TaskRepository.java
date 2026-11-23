@@ -40,6 +40,16 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
                     @Param("now") LocalDateTime now, @Param("cats") Collection<Category> cats,
                     @Param("q") String q);
 
+    /** Finished orders (last 30 days) where I am the requester and have not rated the runner yet. */
+    @Query("select t.id from Task t where t.requester.id = :uid and t.status = com.komek.model.TaskStatus.DONE "
+            + "and t.rating is null and t.updatedAt > :since")
+    List<Long> toRateAsRequester(@Param("uid") Long uid, @Param("since") LocalDateTime since);
+
+    /** Finished tasks (last 30 days) where I am the runner and have not rated the requester yet. */
+    @Query("select t.id from Task t where t.runner.id = :uid and t.status = com.komek.model.TaskStatus.DONE "
+            + "and t.requesterRating is null and t.updatedAt > :since")
+    List<Long> toRateAsRunner(@Param("uid") Long uid, @Param("since") LocalDateTime since);
+
     /** One row: [average rating, number of ratings] of the tasks this user performed (rated by requesters). */
     @Query("select avg(t.rating), count(t.rating) from Task t where t.runner.id = :uid and t.rating is not null")
     List<Object[]> ratingStats(@Param("uid") Long uid);

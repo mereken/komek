@@ -39,8 +39,39 @@ public class Task {
     @Column(nullable = false, length = 200)
     private String location;
 
+    /** Optional start of a time window ("from 19:00 to 20:00"). Null = just "by the deadline". */
+    @Column(name = "start_at")
+    private LocalDateTime startAt;
+
+    /** The end of the window, or the "do it by" time when there is no window. */
     @Column(nullable = false)
     private LocalDateTime deadline;
+
+    /** Entrance / floor / apartment / intercom / note for the first and the main address, as a small JSON text. */
+    @Column(name = "from_details", length = 400)
+    private String fromDetails;
+
+    @Column(name = "location_details", length = 400)
+    private String locationDetails;
+
+    /** false = fixed price: runners respond at this price and cannot offer their own. */
+    @Column(name = "allow_offers", columnDefinition = "boolean default true")
+    private boolean allowOffers = true;
+
+    /** Money the runner has to spend for the order (a purchase, cash on delivery). Not earnings, no commission. */
+    @Column(columnDefinition = "integer default 0")
+    private int budget;
+
+    /** Grows with every edit; responders compare it with what they have seen. */
+    @Column(name = "edit_version", columnDefinition = "integer default 0")
+    private int editVersion;
+
+    /** Human-readable summary of the last edit ("Время: ... → ...; Цена: ... → ..."). */
+    @Column(name = "last_change", length = 500)
+    private String lastChange;
+
+    @Column(name = "edited_at")
+    private LocalDateTime editedAt;
 
     /** KZT. After the requester picks a runner this becomes the runner's offered price. */
     @Column(nullable = false)
@@ -92,6 +123,22 @@ public class Task {
     public void setFromLocation(String v) { this.fromLocation = v; }
     public String getLocation() { return location; }
     public void setLocation(String v) { this.location = v; }
+    public LocalDateTime getStartAt() { return startAt; }
+    public void setStartAt(LocalDateTime v) { this.startAt = v; }
+    public String getFromDetails() { return fromDetails; }
+    public void setFromDetails(String v) { this.fromDetails = v; }
+    public String getLocationDetails() { return locationDetails; }
+    public void setLocationDetails(String v) { this.locationDetails = v; }
+    public boolean isAllowOffers() { return allowOffers; }
+    public void setAllowOffers(boolean v) { this.allowOffers = v; }
+    public int getBudget() { return budget; }
+    public void setBudget(int v) { this.budget = v; }
+    public int getEditVersion() { return editVersion; }
+    public void setEditVersion(int v) { this.editVersion = v; }
+    public String getLastChange() { return lastChange; }
+    public void setLastChange(String v) { this.lastChange = v; }
+    public LocalDateTime getEditedAt() { return editedAt; }
+    public void setEditedAt(LocalDateTime v) { this.editedAt = v; }
     public LocalDateTime getDeadline() { return deadline; }
     public void setDeadline(LocalDateTime v) { this.deadline = v; }
     public Integer getReward() { return reward; }

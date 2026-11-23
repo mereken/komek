@@ -38,14 +38,17 @@ public class AdminService {
     private final TaskRepository tasks;
     private final PaymentRepository payments;
     private final PaymentService paymentService;
+    private final NotificationService notifications;
 
     public AdminService(EntityManager em, UserRepository users, TaskRepository tasks,
-                        PaymentRepository payments, PaymentService paymentService) {
+                        PaymentRepository payments, PaymentService paymentService,
+                        NotificationService notifications) {
         this.em = em;
         this.users = users;
         this.tasks = tasks;
         this.payments = payments;
         this.paymentService = paymentService;
+        this.notifications = notifications;
     }
 
     // ------------------------------------------------------------------ dashboard
@@ -79,8 +82,10 @@ public class AdminService {
         Number commission = em.createQuery(
                         "select coalesce(sum(p.commission), 0L) from Payment p where p.status = :v", Number.class)
                 .setParameter("v", PaymentStatus.RELEASED).getSingleResult();
+        // an advance that already went to the runner is no longer "held"
         Number held = em.createQuery(
-                        "select coalesce(sum(p.amount), 0L) from Payment p where p.status = :v", Number.class)
+                        "select coalesce(sum(case when p.advanceReleased = true then p.amount - p.budget else p.amount end), 0L) "
+                                + "from Payment p where p.status = :v", Number.class)
                 .setParameter("v", PaymentStatus.PAID).getSingleResult();
 
         Double avg = em.createQuery("select avg(t.rating) from Task t where t.rating is not null", Double.class)
@@ -168,6 +173,7 @@ public class AdminService {
         em.createQuery("delete from Task t where t.requester.id = :id or t.runner.id = :id")
                 .setParameter("id", id).executeUpdate();
         em.createQuery("delete from WalletTx w where w.user.id = :id").setParameter("id", id).executeUpdate();
+        em.createQuery("delete from Notification n where n.user.id = :id").setParameter("id", id).executeUpdate();
         em.createQuery("delete from Avatar a where a.userId = :id").setParameter("id", id).executeUpdate();
         em.createQuery("delete from User u where u.id = :id").setParameter("id", id).executeUpdate();
         em.clear();
@@ -210,6 +216,12 @@ public class AdminService {
         paymentService.refund(t, "Возврат: заказ отменён администратором");
         t.setStatus(TaskStatus.CANCELLED);
         tasks.save(t);
+        notifications.send(t.getRequester(), NotificationService.ORDERS, "CANCELLED", t,
+                "Заказ «" + t.getTitle() + "» отменён администратором");
+        if (t.getRunner() != null) {
+            notifications.send(t.getRunner(), NotificationService.TASKS, "CANCELLED", t,
+                    "Заказ «" + t.getTitle() + "» отменён администратором");
+        }
     }
 
     /** Deletes the order with its responses and payments; reserved money goes back to the requester. */
@@ -238,6 +250,7 @@ public class AdminService {
         }
         em.flush();
         em.createQuery("update WalletTx w set w.task = null where w.task.id = :id").setParameter("id", taskId).executeUpdate();
+        em.createQuery("delete from Notification n where n.task.id = :id").setParameter("id", taskId).executeUpdate();
         em.createQuery("delete from Payment p where p.task.id = :id").setParameter("id", taskId).executeUpdate();
     }
 

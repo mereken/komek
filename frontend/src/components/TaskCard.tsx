@@ -13,14 +13,15 @@ interface Props {
   category?: Category;
   badge?: BadgeInfo;
   chevron?: boolean;
+  fresh?: boolean; // there is news about this order the user has not seen
 }
 
-export default function TaskCard({ to, title, meta, place, price, category, badge, chevron }: Props) {
+export default function TaskCard({ to, title, meta, place, price, category, badge, chevron, fresh }: Props) {
   return (
     <Link to={to} className={'tcard' + (category ? ' has-ico' : '')}>
       {category && <span className="tcard-ico"><CategoryIcon category={category} /></span>}
       <div className="tcard-top">
-        <b>{title}</b>
+        <b>{fresh && <span className="fresh-dot" title="Есть новое" />}{title}</b>
         <span className="price">{money(price)}</span>
       </div>
       {place && <div className="tcard-place">{place}</div>}

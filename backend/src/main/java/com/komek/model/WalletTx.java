@@ -35,6 +35,10 @@ public class WalletTx {
     @Column(length = 160)
     private String note;
 
+    /** true = the runner's advance for expenses: money of the requester, not earnings. */
+    @Column(columnDefinition = "boolean default false")
+    private boolean advance;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -52,6 +56,8 @@ public class WalletTx {
     public void setBalanceAfter(long v) { this.balanceAfter = v; }
     public Task getTask() { return task; }
     public void setTask(Task v) { this.task = v; }
+    public boolean isAdvance() { return advance; }
+    public void setAdvance(boolean v) { this.advance = v; }
     public String getNote() { return note; }
     public void setNote(String v) { this.note = v; }
     public LocalDateTime getCreatedAt() { return createdAt; }

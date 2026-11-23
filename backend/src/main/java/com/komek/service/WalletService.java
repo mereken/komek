@@ -52,10 +52,11 @@ public class WalletService {
         User u = users.findById(uid).orElseThrow(WalletService::noUser);
         List<TxDto> history = txs.findTop50ByUserIdOrderByIdDesc(uid).stream()
                 .map(t -> new TxDto(t.getId(), t.getType(), t.getAmount(), t.getBalanceAfter(),
-                        t.getTask() == null ? null : t.getTask().getId(), t.getNote(), t.getCreatedAt()))
+                        t.getTask() == null ? null : t.getTask().getId(), t.getNote(), t.isAdvance(), t.getCreatedAt()))
                 .toList();
+        long earned = txs.sumOwn(uid, TxType.PAYOUT);
         CardDto card = u.hasCard() ? new CardDto(u.getCardBrand(), u.getCardLast4(), u.getCardHolder(), u.getCardExpiry()) : null;
-        return new WalletDto(u.getBalance(), commissionPercent, testMode, card, history);
+        return new WalletDto(u.getBalance(), earned, commissionPercent, testMode, card, history);
     }
 
     // ---------------------------------------------------------------------- card
@@ -116,17 +117,22 @@ public class WalletService {
     }
 
     void credit(User u, long amount, TxType type, Task task, String note) {
+        credit(u, amount, type, task, note, false);
+    }
+
+    /** advance = true marks the runner's advance for expenses (not earnings). */
+    void credit(User u, long amount, TxType type, Task task, String note, boolean advance) {
         u.setBalance(u.getBalance() + amount);
-        record(u, type, amount, task, note);
+        record(u, type, amount, task, note, advance);
     }
 
     void debit(User u, long amount, TxType type, Task task, String note) {
         if (u.getBalance() < amount) throw bad("Недостаточно баллов на балансе");
         u.setBalance(u.getBalance() - amount);
-        record(u, type, -amount, task, note);
+        record(u, type, -amount, task, note, false);
     }
 
-    private void record(User u, TxType type, long signedAmount, Task task, String note) {
+    private void record(User u, TxType type, long signedAmount, Task task, String note, boolean advance) {
         WalletTx t = new WalletTx();
         t.setUser(u);
         t.setType(type);
@@ -134,6 +140,7 @@ public class WalletService {
         t.setBalanceAfter(u.getBalance());
         t.setTask(task);
         t.setNote(note != null && note.length() > 160 ? note.substring(0, 160) : note);
+        t.setAdvance(advance);
         txs.save(t);
     }
 

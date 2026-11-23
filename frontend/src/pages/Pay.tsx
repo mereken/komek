@@ -51,7 +51,8 @@ export default function Pay() {
 
   const saved = wallet.card;
   const useSaved = !!saved && !newCard;
-  const enough = wallet.balance >= task.reward;
+  const total = task.reward + task.budget; // reward + money for expenses
+  const enough = wallet.balance >= total;
 
   async function submit() {
     setFormError('');
@@ -94,12 +95,16 @@ export default function Pay() {
 
       <div className="card pay-summary">
         <div className="m">К оплате</div>
-        <div className="bigprice">{money(task.reward)}</div>
+        <div className="bigprice">{money(total)}</div>
         <div className="pay-lines">
-          <div><span>Исполнитель получит</span><b>{money(task.payout)}</b></div>
-          <div><span>Комиссия сервиса {task.commissionPercent}%</span><b>{money(task.commission)}</b></div>
+          <div><span>Вознаграждение исполнителю</span><b>{money(task.reward)}</b></div>
+          <div><span>Из него комиссия сервиса {task.commissionPercent}%</span><b>{money(task.commission)}</b></div>
+          {task.budget > 0 && <div><span>Деньги на расходы (аванс)</span><b>{money(task.budget)}</b></div>}
         </div>
-        <p className="hint">Деньги резервируются и переводятся исполнителю только после того, как вы нажмёте «Работа выполнена».</p>
+        <p className="hint">
+          Деньги резервируются. Вознаграждение уйдёт исполнителю после того, как вы нажмёте «Работа выполнена».
+          {task.budget > 0 && ' Деньги на расходы исполнитель получит авансом, когда начнёт: остаток или нехватку вы решите с ним по телефону.'}
+        </p>
       </div>
 
       <div className="label">Способ оплаты</div>
@@ -182,7 +187,7 @@ export default function Pay() {
       {formError && <div className="err">{formError}</div>}
 
       <div className="actions">
-        <button className="btn" disabled={busy} onClick={submit}>{busy ? 'Оплачиваем…' : `Оплатить ${money(task.reward)}`}</button>
+        <button className="btn" disabled={busy} onClick={submit}>{busy ? 'Оплачиваем…' : `Оплатить ${money(total)}`}</button>
       </div>
     </>
   );

@@ -32,7 +32,17 @@ public class Payment {
     @Column(nullable = false)
     private int commission;
 
-    /** What the runner receives: amount - commission. */
+    /**
+     * Money for the runner's expenses (a purchase): paid together with the reward, handed to the runner as an
+     * advance when the work starts. amount = reward + budget; commission is taken from the reward only.
+     */
+    @Column(columnDefinition = "integer default 0")
+    private int budget;
+
+    @Column(name = "advance_released", columnDefinition = "boolean default false")
+    private boolean advanceReleased;
+
+    /** What the runner receives for the work: reward - commission. */
     @Column(nullable = false)
     private int payout;
 
@@ -71,6 +81,10 @@ public class Payment {
     public void setPayee(User v) { this.payee = v; }
     public int getAmount() { return amount; }
     public void setAmount(int v) { this.amount = v; }
+    public int getBudget() { return budget; }
+    public void setBudget(int v) { this.budget = v; }
+    public boolean isAdvanceReleased() { return advanceReleased; }
+    public void setAdvanceReleased(boolean v) { this.advanceReleased = v; }
     public int getCommission() { return commission; }
     public void setCommission(int v) { this.commission = v; }
     public int getPayout() { return payout; }

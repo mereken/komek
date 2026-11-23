@@ -55,9 +55,11 @@ export type PaymentMethod = 'CARD' | 'BALANCE';
 /** Payment of an order. PAID = money is reserved, RELEASED = paid out to the runner, REFUNDED = returned. */
 export interface PaymentInfo {
   status: PaymentStatus;
-  amount: number;
-  commission: number;
-  payout: number;
+  amount: number; // reward + budget: what the requester paid
+  commission: number; // about the reward only
+  payout: number; // reward - commission
+  budget: number;
+  advanceReleased: boolean; // the budget has already been handed to the runner
   method: PaymentMethod;
   cardLast4: string | null;
   updatedAt: string;
@@ -68,10 +70,15 @@ export interface Task {
   title: string;
   description: string;
   category: Category;
-  fromLocation: string | null; // "where from" (pickup / shop), only for two-address orders
-  location: string; // the main address: where to bring / leave, or the only address
-  deadline: string; // "2026-10-07T18:00:00" (Almaty time, no zone)
+  fromLocation: string | null; // the first point (pickup / shop), only for two-address orders
+  fromDetails: string | null; // entrance, floor... as JSON text; only the requester and the chosen runner get it
+  location: string; // the main / last address: where to bring / leave, or the only address
+  locationDetails: string | null;
+  startAt: string | null; // start of a time window; null = just "by the deadline"
+  deadline: string; // "2026-10-07T18:00:00" (Almaty time, no zone): end of the window or "do it by"
   reward: number;
+  budget: number; // money the runner has to spend (a purchase); handed over as an advance when the work starts
+  allowOffers: boolean; // false = fixed price, runners cannot offer their own
   status: TaskStatus;
   createdAt: string;
   owner: boolean; // I am the requester
@@ -86,6 +93,10 @@ export interface Task {
   commission: number; // platform's share of the current price
   payout: number; // what the runner gets
   payment: PaymentInfo | null;
+  changedSinceResponse: boolean; // I responded and the order was edited after that
+  lastChange: string | null; // what was changed in the last edit
+  editedAt: string | null;
+  updates: number; // news about this order I have not seen yet
 }
 
 export interface Offer {
@@ -105,10 +116,15 @@ export interface NewTask {
   category: Category | null;
   title: string;
   fromLocation: string | null;
+  fromDetails: string | null;
   location: string;
-  deadline: string | null; // "2026-10-07T18:00"
+  locationDetails: string | null;
+  startAt: string | null; // "2026-10-07T19:00" = start of a time window
+  deadline: string | null; // "2026-10-07T18:00" (or the end of the window)
   description: string;
   reward: number | null;
+  budget: number;
+  allowOffers: boolean;
 }
 
 // ---- payments and wallet
@@ -145,11 +161,13 @@ export interface Tx {
   balanceAfter: number;
   taskId: number | null;
   note: string | null;
+  advance: boolean; // an advance for expenses: the requester's money, not earnings
   createdAt: string;
 }
 
 export interface Wallet {
   balance: number;
+  earned: number; // paid out for finished orders (no expense advances)
   commissionPercent: number;
   testMode: boolean;
   card: Card | null;
@@ -162,6 +180,24 @@ export interface Place {
   text: string; // goes into the input when picked
   lat: number | null;
   lon: number | null;
+}
+
+// ---- notifications
+export interface AppNotification {
+  id: number;
+  kind: string;
+  area: 'ORDERS' | 'TASKS' | 'PROFILE';
+  taskId: number | null;
+  text: string;
+  createdAt: string;
+  read: boolean;
+}
+
+export interface NotifSummary {
+  orders: number; // orders that need attention (news or a rating to give)
+  tasks: number;
+  profile: number;
+  unread: number;
 }
 
 // ---- admin panel
@@ -279,6 +315,13 @@ export const api = {
 
   // requester
   createTask: (b: NewTask) => request<Task>('/tasks', 'POST', b),
+  updateTask: (id: number, b: NewTask) => request<Task>(`/tasks/${id}`, 'PUT', b),
+
+  // notifications and tab-bar numbers
+  notifSummary: () => request<NotifSummary>('/notifications/summary'),
+  notifications: () => request<AppNotification[]>('/notifications'),
+  notifRead: (id: number) => request<{ ok: boolean }>(`/notifications/${id}/read`, 'POST'),
+  notifReadAll: () => request<{ ok: boolean }>('/notifications/read-all', 'POST'),
   myTasks: (scope: Scope) => request<Task[]>(`/tasks/mine?scope=${scope}`),
   offers: (id: number) => request<Offer[]>(`/tasks/${id}/responses`),
   selectOffer: (id: number, offerId: number) => request<Task>(`/tasks/${id}/responses/${offerId}/select`, 'POST'),

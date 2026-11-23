@@ -99,7 +99,7 @@ export default function Wallet() {
       <div className="balance-card">
         <span className="k">Баланс</span>
         <b>{pointsText(w.balance)}</b>
-        <span className="k">1 балл = 1 ₸</span>
+        <span className="k">1 балл = 1 ₸ · заработано всего: {pointsText(w.earned)}</span>
         <div className="balance-actions">
           <button type="button" onClick={() => open('topup')}>Пополнить</button>
           <button type="button" onClick={() => open('withdraw')}>Вывести</button>
@@ -211,8 +211,9 @@ export default function Wallet() {
       <div className="section strong">Как это работает</div>
       <ul className="howto">
         <li>Заказчик оплачивает заказ, деньги резервируются и ждут.</li>
-        <li>Когда заказчик подтверждает выполнение, исполнитель получает оплату баллами.</li>
-        <li>Сервис удерживает комиссию {w.commissionPercent}% с суммы заказа.</li>
+        <li>Когда заказчик подтверждает выполнение, исполнитель получает вознаграждение баллами.</li>
+        <li>Сервис удерживает комиссию {w.commissionPercent}% только с вознаграждения.</li>
+        <li>Если заказ требует покупки, аванс на расходы приходит, когда исполнитель начинает. Это деньги заказчика, а не заработок.</li>
         <li>Баллами можно оплачивать свои заказы или вывести их на карту.</li>
       </ul>
 
@@ -222,7 +223,7 @@ export default function Wallet() {
         <div className="tx" key={t.id}>
           <div className={'tx-ico ' + (t.amount >= 0 ? 'pos' : 'neg')}>{TX_ICON[t.type]}</div>
           <div className="tx-main">
-            <b>{TX_TITLE[t.type]}</b>
+            <b>{t.advance ? 'Аванс на расходы' : TX_TITLE[t.type]}{t.advance && <span className="adv-tag">не доход</span>}</b>
             <div className="m">
               {t.note ?? ''}
               {t.taskId && <> · <Link to={`/task/${t.taskId}`}>заказ №{t.taskId}</Link></>}

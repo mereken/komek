@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api, Scope, WorkItem } from '../api';
-import { routeText, workBadge } from '../format';
+import { ratingReminder, routeText, workBadge } from '../format';
 import { useLoad } from '../hooks';
 import EmptyState from '../components/EmptyState';
 import Segmented from '../components/Segmented';
@@ -17,7 +17,11 @@ function Card({ item }: { item: WorkItem }) {
       place={routeText(t)}
       meta={`Заказчик: ${t.requester.name}`}
       price={item.response ? item.myPrice ?? t.reward : t.reward}
-      badge={workBadge(item)}
+      badge={
+        t.changedSinceResponse ? { text: 'Заказ изменён', tone: 'orange' }
+          : (!item.response ? ratingReminder(t, false) : null) ?? workBadge(item)
+      }
+      fresh={t.updates > 0}
       chevron
     />
   );
